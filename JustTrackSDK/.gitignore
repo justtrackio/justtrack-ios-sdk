@@ -1,0 +1,4 @@
+TestFlight/
+Packages
+local.properties
+*.generated.swift

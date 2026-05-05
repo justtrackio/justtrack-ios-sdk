@@ -1,0 +1,91 @@
+# https://realm.github.io/SwiftLint/rule-directory.html
+
+custom_rules:
+  no_uuid:
+    included: ".*\\.swift"
+    excluded: "TestApp|JustTrackSDKTests|StringID.swift"
+    name: "No UUID"
+    regex: '\bUUID\b'
+    message: "Use StringID instead of UUID"
+    severity: error
+    match_kinds:
+      - identifier
+      - typeidentifier
+
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+disabled_rules:
+  - cyclomatic_complexity
+  - function_body_length
+  - function_parameter_count
+  - file_length
+  - line_length
+  - nesting
+  - opening_brace
+  - private_over_fileprivate
+  - trailing_comma
+  - type_body_length
+  - void_function_in_ternary
+
+excluded:
+  - Carthage
+  - JustTrackSDKTests
+  - Pods
+
+identifier_name:
+  min_length: 1
+  max_length:
+    warning: 41
+    error: 51
+
+implicit_return:
+  severity: warning
+  included: 
+    - closure
+    - getter
+    - initializer
+    - subscript
+
+force_try:
+  severity: error
+
+force_cast:
+  severity: error
+
+force_unwrapping:
+  severity: error
+
+opt_in_rules:
+  - missing_docs
+  - closure_spacing
+  - collection_alignment
+  - contains_over_first_not_nil
+  - convenience_type
+  - discouraged_direct_init
+  - discouraged_optional_collection
+  - extension_access_modifier
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicit_return
+  - joined_default_parameter
+  - operator_usage_whitespace
+  - overridden_super_call
+  - pattern_matching_keywords
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - unowned_variable_capture
+  - unused_control_flow_label
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+trailing_whitespace:
+  ignores_empty_lines: false
+  ignores_comments: true
+
+missing_docs:
+  severity: error
+  excludes_inherited_types: true
+  excludes_trivial_init: true

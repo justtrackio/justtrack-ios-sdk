@@ -1,0 +1,1 @@
+struct SdkShutdownError: Error {}

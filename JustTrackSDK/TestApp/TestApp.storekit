@@ -1,0 +1,546 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "2412E70C",
+  "nonRenewingSubscriptions" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "F338C649",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Non-Renewing Subscription",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "non_renewing_subscription",
+      "referenceName" : "Non-Renewing Subscription",
+      "type" : "NonRenewingSubscription"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "F338C650",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Non-Renewing Weekly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_non_renewing_subscription",
+      "referenceName" : "Test Non-Renewing Weekly",
+      "type" : "NonRenewingSubscription"
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "F338C651",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Non-Renewing Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "non_renewing_premium",
+      "referenceName" : "Non-Renewing Premium",
+      "type" : "NonRenewingSubscription"
+    }
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "26C9F69D",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Consumable Purchase",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "consumable_purchase",
+      "referenceName" : "Consumable Purchase",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "41E3BC25",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Non-Consumable Purchase",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "non_consumable_purchase",
+      "referenceName" : "Non-Consumable Purchase",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "0.49",
+      "familyShareable" : false,
+      "internalID" : "TEST001",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Consumable 1",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_consumable_purchase",
+      "referenceName" : "Test Consumable 1",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.49",
+      "familyShareable" : false,
+      "internalID" : "TEST002",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Consumable 2",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_consumable_purchase_2",
+      "referenceName" : "Test Consumable 2",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "TEST003",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Consumable 3",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_consumable_purchase_3",
+      "referenceName" : "Test Consumable 3",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "TEST004",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Non-Consumable 1",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_non_consumable_purchase",
+      "referenceName" : "Test Non-Consumable 1",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "TEST005",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Non-Consumable 2",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_non_consumable_purchase_2",
+      "referenceName" : "Test Non-Consumable 2",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "14.99",
+      "familyShareable" : false,
+      "internalID" : "TEST006",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Non-Consumable 3",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "test_non_consumable_purchase_3",
+      "referenceName" : "Test Non-Consumable 3",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "49.99",
+      "familyShareable" : true,
+      "internalID" : "TEST007",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Premium Unlock",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "premium_unlock",
+      "referenceName" : "Premium Unlock",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "TEST008",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "100 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "coins_100",
+      "referenceName" : "100 Coins",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "TEST009",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "500 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "coins_500",
+      "referenceName" : "500 Coins",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "TEST010",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "2500 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "coins_2500",
+      "referenceName" : "2500 Coins",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "345A877A",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Auto-Renewable Subscription",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Auto-Renewable Subscription",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "99.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "3FE9C72E",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Auto-Renewable Subscription",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "auto_renewable_subscription",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Auto-Renewable Subscription",
+          "subscriptionGroupID" : "345A877A",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "id" : "TEST_GROUP_1",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Test Subscription Group",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Test Subscription Group",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "TEST_SUB_001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Test Weekly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Test Weekly",
+          "subscriptionGroupID" : "TEST_GROUP_1",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "TEST_SUB_002",
+          "introductoryOffer" : {
+            "internalID" : "INTRO_001",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Test Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription_2_1",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Test Monthly",
+          "subscriptionGroupID" : "TEST_GROUP_1",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "49.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "TEST_SUB_003",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Test Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription_3",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Test Yearly",
+          "subscriptionGroupID" : "TEST_GROUP_1",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "id" : "PREMIUM_GROUP",
+      "localizations" : [
+        {
+          "description" : "",
+          "displayName" : "Premium Subscriptions",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Premium Subscriptions",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "PREM_SUB_001",
+          "introductoryOffer" : {
+            "internalID" : "INTRO_002",
+            "numberOfPeriods" : 3,
+            "paymentMode" : "payAsYouGo",
+            "subscriptionPeriod" : "P1M",
+            "displayPrice" : "9.99"
+          },
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription_5",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "PREMIUM_GROUP",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "149.99",
+          "familyShareable" : true,
+          "groupNumber" : 2,
+          "internalID" : "PREM_SUB_002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Premium Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription_6",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Annual",
+          "subscriptionGroupID" : "PREMIUM_GROUP",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "299.99",
+          "familyShareable" : true,
+          "groupNumber" : 3,
+          "internalID" : "PREM_SUB_003",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "Premium Lifetime",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "test_auto_renewable_subscription_7",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Lifetime",
+          "subscriptionGroupID" : "PREMIUM_GROUP",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 1
+  }
+}

@@ -1,0 +1,53 @@
+# justtrack SDK credentials
+
+# API token for the test app (sandbox environment)
+JUSTTRACK_TEST_APP_API_TOKEN=
+
+# API token for unit tests
+JUSTTRACK_TESTS_API_TOKEN=
+
+# Client ID for unit tests
+JUSTTRACK_TESTS_CLIENT_ID=
+
+# Salt for user ID hashing
+JUSTTRACK_USER_ID_SALT=
+
+# Sandbox environment root domain
+JUSTTRACK_SANDBOX_ROOT=
+
+# AWS configuration
+AWS_ACCOUNT_ID=
+AWS_ACCOUNT_ROLE=
+AWS_PROFILE=
+
+# S3 bucket names
+S3_BUCKET_SDK_PUBLIC=
+S3_BUCKET_DOCS=
+
+# CloudFront distribution ID
+CLOUDFRONT_DISTRIBUTION_ID=
+
+# Git repository URLs
+GIT_REPO_SPM_MANIFEST=
+GIT_REPO_COCOAPODS_TESTING=
+
+# IntegrationApp credentials
+INTEGRATION_APP_API_TOKEN=
+
+# Firebase configuration (IntegrationApp)
+FIREBASE_GOOGLE_APP_ID=
+FIREBASE_GCM_SENDER_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_API_KEY=
+
+# IronSource configuration (IntegrationApp)
+IRONSOURCE_APP_KEY=
+
+# AppLovin configuration (IntegrationApp)
+APPLOVIN_SDK_KEY=
+
+# UnityAds configuration (IntegrationApp)
+UNITY_ADS_GAME_ID=
+
+# Test User ID (IntegrationApp)
+INTEGRATION_APP_TEST_USER_ID=
