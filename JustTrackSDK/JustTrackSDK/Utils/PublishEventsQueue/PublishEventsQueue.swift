@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 let publishEventsGlobalQueue = DispatchQueue(label: "io.justtrack.JustTrackSDK.PublishEventsQueue.queue", qos: .userInteractive)
 
@@ -86,6 +87,10 @@ final class PublishEventsQueue {
 
 			let publishingEvent = PublishingEvent(event: StorableEvent(id: id, event: event, sequenceNumber: sequenceNumber, sdkVersion: sdkVersionProvider()))
 
+			logger.debug(
+				"PublishEventsQueue: Received event seqNo \(publishingEvent.sequenceNumber()), \(publishingEvent.event.event) at \(publishingEvent.happenedAt())"
+			)
+
 			eventStore.storeEvent(event: publishingEvent.event)
 			do {
 				try sqliteDriver.storeEvent(publishingEvent.event)
@@ -146,7 +151,7 @@ final class PublishEventsQueue {
 				batch.batch.append(nextEvent)
 
 				if batch.batch.count >= Self.maxBatchSize
-					|| (nextEvent.event.event.name == JtSessionTrackingEvent.name && nextEvent.event.event.dimensions[Dimension.jtAction.stringValue] == "end")
+					|| (nextEvent.event.event.name == JtSessionTrackingEvent.name && nextEvent.event.event.dimensions[Dimension.jtAction.rawValue] == "end")
 				{
 					publish(events: batch.batch)
 					currentBatch = nil

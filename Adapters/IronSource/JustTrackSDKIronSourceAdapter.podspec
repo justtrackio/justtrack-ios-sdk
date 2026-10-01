@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
   s.name             = 'JustTrackSDKIronSourceAdapter'
-  s.version          = '1.0.0'
+  s.version          = '2.0.0'
   s.summary          = 'IronSource adapter for justtrack SDK.'
 
   s.description      = <<-DESC
 The JustTrackSDKIronSourceAdapter allows you to integrate IronSource with the justtrack SDK.
                        DESC
 
-  s.homepage         = 'https://docs.justtrack.io/sdk/6.0.x/ios/'
+  s.homepage         = 'https://docs.justtrack.io/sdk/integrations'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.authors          = { 'justtrack' => 'https://justtrack.io/contact/' }
   s.source           = { :http => 'https://sdk.justtrack.io/pods/JustTrackSDKIronSourceAdapter/JustTrackSDKIronSourceAdapter-' + s.version.to_s + '.zip', :flatten => false }

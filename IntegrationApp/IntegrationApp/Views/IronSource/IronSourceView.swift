@@ -9,47 +9,29 @@ struct IronSourceView: View {
     var body: some View {
         VStack(alignment: .center) {
             DefaultButton(
-                "Video",
-                isEnabled: $model.providesVideo,
-                action: model.displayVideo
-            )
-            DefaultButton(
-                "Interstitial",
-                isEnabled: $model.providesInterstitial,
-                action: model.displayInterstitial
-            )
-            DefaultButton(
-                "Banner",
-                isEnabled: $model.providesBanner,
-                action: model.displayBanner
+                "Launch Test Suite",
+                isEnabled: $model.isInitialized,
+                action: model.launchTestSuite
             )
         }
         .navigationTitle("ironSource")
         .onAppear(perform: model.run)
     }
 
-	init(
-		customUserId: String? = nil
-	) {
-        _model = StateObject(wrappedValue: IronSourceModel(customUserId: customUserId))
+	init() {
+        _model = StateObject(wrappedValue: IronSourceModel())
     }
 }
 
 final class IronSourceModel: NSObject, ObservableObject {
-    @Published var providesVideo = false
-    @Published var providesInterstitial = false
-    @Published var providesBanner = true
-
-    private var customUserId: String?
+    @Published var isInitialized = false
 
     private var sdk: JustTrackSdk?
 
 	private var isRunning = false
 
-	init(
-		customUserId: String? = nil
-	) {
-        self.customUserId = customUserId
+	override init() {
+        super.init()
     }
 
     func run() {
@@ -61,23 +43,18 @@ final class IronSourceModel: NSObject, ObservableObject {
         runSdk()
     }
 
-    func displayVideo() {
-        IronSource.showRewardedVideo(with: rootVC)
-    }
-    
-    func displayInterstitial() {
-        IronSource.showInterstitial(with: rootVC)
-    }
-
-    func displayBanner() {
-        IronSource.loadBanner(with: rootVC, size: ISBannerSize(width: Int(rootVC.view.bounds.width), andHeight: Int(rootVC.view.bounds.height)))
+    func launchTestSuite() {
+        LevelPlay.launchTestSuite(rootVC)
     }
 
     private func runSdk() {
         do {
-            sdk = try JustTrackSdkBuilder(apiToken: LocalCredentials.apiToken).build()
+            sdk = try JustTrackSdkBuilder(apiToken: LocalCredentials.apiToken)
+                .set(isLoggingEnabled: true)
+                .set(serverUrl: LocalCredentials.sandboxServerUrl)
+                .build()
 			if let sdk {
-				sdk.integrate(with: JusttrackIronSourceAdapter(customUserId: customUserId)).observe { integrationResult in
+				sdk.integrate(with: JusttrackIronSourceAdapter()).observe { integrationResult in
 					switch integrationResult {
 					case let .failure(error):
 						print("[IA] SDK failed to integrate IronSource: \(error)")
@@ -94,73 +71,21 @@ final class IronSourceModel: NSObject, ObservableObject {
     }
 
     private func runIronSource() {
-        IronSource.setLevelPlayRewardedVideoDelegate(self)
-        IronSource.setLevelPlayInterstitialDelegate(self)
-        IronSource.setLevelPlayBannerDelegate(self)
+        LevelPlay.setMetaDataWithKey("is_test_suite", value: "enable")
 
-        IronSource.initWithAppKey(LocalCredentials.ironSourceAppKey, delegate: self)
-    }
-}
+        let requestBuilder = LPMInitRequestBuilder(appKey: LocalCredentials.ironSourceAppKey)
+        let initRequest = requestBuilder.build()
 
-extension IronSourceModel: ISInitializationDelegate {
-    func initializationDidComplete() {
-        IronSource.loadRewardedVideo()
-        IronSource.loadInterstitial()
-    }
-}
+        LevelPlay.initWith(initRequest) { [weak self] config, error in
+            if let error {
+                print("IronSource initialization failed: \(error)")
+                return
+            }
 
-extension IronSourceModel: LevelPlayRewardedVideoDelegate {
-    func hasAvailableAd(with adInfo: ISAdInfo) {
-        providesVideo = true
-    }
-    
-    func hasNoAvailableAd() {
-        print(#function)
-    }
-    
-    func didReceiveReward(forPlacement placementInfo: ISPlacementInfo, with adInfo: ISAdInfo) {
-    }
-    
-    func didFailToShowWithError(_ error: (any Error), andAdInfo adInfo: ISAdInfo) {
-    }
-    
-    func didOpen(with adInfo: ISAdInfo) {
-    }
-    
-    func didClick(_ placementInfo: ISPlacementInfo, with adInfo: ISAdInfo) {
-    }
-    
-    func didClose(with adInfo: ISAdInfo) {
-    }
-}
-
-extension IronSourceModel: LevelPlayInterstitialDelegate {
-    func didLoad(with adInfo: ISAdInfo) {
-        providesInterstitial = true
-    }
-    
-    func didFailToLoadWithError(_ error: (any Error)) {
-        print(#function, error)
-    }
-    
-    func didShow(with adInfo: ISAdInfo) {
-    }
-    
-    func didClick(with adInfo: ISAdInfo) {
-    }
-}
-
-extension IronSourceModel: LevelPlayBannerDelegate {
-    func didLoad(_ bannerView: ISBannerView, with adInfo: ISAdInfo) {
-        providesBanner = true
-    }
-    
-    func didLeaveApplication(with adInfo: ISAdInfo) {
-    }
-    
-    func didPresentScreen(with adInfo: ISAdInfo) {
-    }
-    
-    func didDismissScreen(with adInfo: ISAdInfo) {
+            print("IronSource initialization succeeded")
+            DispatchQueue.main.async {
+                self?.isInitialized = true
+            }
+        }
     }
 }

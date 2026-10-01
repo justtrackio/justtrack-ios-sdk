@@ -123,7 +123,6 @@ struct DTOAttributionRequestDeviceDisplay: Codable, Equatable {
 
 class DTOAttributionResponse: AttributionResponseImpl {
 	let retargetingParameters: RetargetingParameters?
-	let userTestGroup: Int?
 
 	init(userId: StringID, data: Data, wasAlreadyInstalled: Bool) throws {
 		guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -152,8 +151,9 @@ class DTOAttributionResponse: AttributionResponseImpl {
 		guard let campaignObject = attributionObject["campaign"] as? [String: Any] else {
 			throw DTODecodingError("failed to decode campaign object")
 		}
-		guard let campaignId = campaignObject["id"] as? Int else {
-			throw DTODecodingError("failed to decode campaign id")
+		let campaignExternalId = campaignObject["externalId"] as? String
+		guard let campaignExternalId else {
+			throw DTODecodingError("failed to decode campaign externalId")
 		}
 		guard let campaignName = campaignObject["name"] as? String else {
 			throw DTODecodingError("failed to decode campaign name")
@@ -163,9 +163,6 @@ class DTOAttributionResponse: AttributionResponseImpl {
 		}
 		guard let campaignOrganic = campaignObject["organic"] as? Bool else {
 			throw DTODecodingError("failed to decode campaign organic flag")
-		}
-		guard let type = attributionObject["type"] as? String else {
-			throw DTODecodingError("failed to decode attribution type")
 		}
 		guard let channelObject = attributionObject["channel"] as? [String: Any] else {
 			throw DTODecodingError("failed to decode channel object")
@@ -220,20 +217,17 @@ class DTOAttributionResponse: AttributionResponseImpl {
 			self.retargetingParameters = nil
 		}
 
-		self.userTestGroup = userObject["testGroup"] as? Int
-
 		super.init(
 			userId: userId,
 			installId: installId,
 			userType: userType,
 			redownload: redownload,
 			campaign: Campaign(
-				id: campaignId,
+				id: campaignExternalId,
 				name: campaignName,
 				type: campaignType,
 				organic: campaignOrganic
 			),
-			type: type,
 			channel: Channel(id: channelId, name: channelName, incent: channelIncent),
 			partner: Partner(id: partnerId, name: partnerName),
 			sourceId: sourceId,

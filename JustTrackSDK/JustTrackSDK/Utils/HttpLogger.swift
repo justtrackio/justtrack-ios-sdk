@@ -4,7 +4,6 @@ protocol HttpLogger: Logger {
 	func getFallback() -> Logger
 	func set(installId: StringID)
 	func sendToServer()
-	func setRules(logConfig: AttributionOutputSdkConfig.Log?, metricConfig: AttributionOutputSdkConfig.Metric?)
 }
 
 class HttpLoggerImpl: HttpLogger {
@@ -14,11 +13,9 @@ class HttpLoggerImpl: HttpLogger {
 	private static let warningMetric = Metric(metric: "Warnings")
 
 	private let fallback: Logger
-	private let httpClient: HttpClient
+	private let logApi: LogApi
 	private let logAggregator: LogAggregator
 	private var installId: StringID
-	private var logConfig: AttributionOutputSdkConfig.Log?
-	private var metricConfig: AttributionOutputSdkConfig.Metric?
 	private var sendLogsResults = [String: Future<Data>]()
 	private let sendLogsResultsQueue = DispatchQueue(label: "io.justtrack.HttpLoggerImpl.sendLogsResultsQueue", qos: .userInitiated)
 	private let adIdsProvider: () -> Future<AdIds>
@@ -28,16 +25,16 @@ class HttpLoggerImpl: HttpLogger {
 
 	init(
 		fallback: Logger,
-		httpClient: HttpClient,
+		logApi: LogApi,
 		logAggregator: LogAggregator,
 		installId: StringID,
 		adIdsProvider: @escaping () -> Future<AdIds>,
 		dateProvider: @escaping () -> Date = Date.init,
-		appVersionProvider: @escaping () -> AppVersion = readAppVersion,
+		appVersionProvider: @escaping () -> AppVersion = { readAppVersion() },
 		sdkVersionProvider: @escaping () -> any Version = currentSdkVersion
 	) {
 		self.fallback = fallback
-		self.httpClient = httpClient
+		self.logApi = logApi
 		self.logAggregator = logAggregator
 		self.installId = installId
 		self.adIdsProvider = adIdsProvider
@@ -96,15 +93,6 @@ class HttpLoggerImpl: HttpLogger {
 	func publishMetric(_ metric: Metric, _ value: Double, _ dimensions: [LoggerFields]) {
 		guard sdkIsRunning() else { return }
 
-		if let metricConfig = metricConfig {
-			let drop = metricConfig.rules.match(name: metric.metric, dimensions: metric.defaultDimensions).drop
-
-			if drop {
-				fallback.debug("Dropping metric \(metric.metric)")
-				return
-			}
-		}
-
 		fallback.publishMetric(metric, value, dimensions)
 		writeMetric(metric, value, dimensions)
 	}
@@ -113,13 +101,6 @@ class HttpLoggerImpl: HttpLogger {
 		guard sdkIsRunning() else { return }
 
 		logAggregator.sendLogsAndMetrics(self.performServerRequest)
-	}
-
-	func setRules(logConfig: AttributionOutputSdkConfig.Log?, metricConfig: AttributionOutputSdkConfig.Metric?) {
-		guard sdkIsRunning() else { return }
-
-		self.logConfig = logConfig
-		self.metricConfig = metricConfig
 	}
 
 	private func writeLog(_ level: String, _ message: String, _ fields: [LoggerFields], _ exception: Error? = nil) {
@@ -157,18 +138,15 @@ class HttpLoggerImpl: HttpLogger {
 	}
 
 	private func performServerRequest(_ messages: [DTOLogMessage], _ metrics: [DTOLogMetric]) -> Future<Data> {
-		let filteredMessages = filterMessagesIfNeeded(messages)
-		let filteredMetrics = filterMetricsIfNeeded(metrics)
-
-		if filteredMessages.isEmpty && filteredMetrics.isEmpty {
+		if messages.isEmpty && metrics.isEmpty {
 			return FutureImpl<Data>().resolve(Data())
 		}
 
 		let appVersion = appVersionProvider()
 		let sdkVersion = sdkVersionProvider()
 		let input = DTOLogInput(
-			messages: filteredMessages,
-			metrics: filteredMetrics,
+			messages: messages,
+			metrics: metrics,
 			appVersion: DTOAppVersion(appVersion),
 			sdkVersion: DTOSdkVersion(sdkVersion),
 			clientDate: dateProvider()
@@ -183,7 +161,7 @@ class HttpLoggerImpl: HttpLogger {
 
 			case let .success(adIds):
 				let sendLogsResultId = StringID()
-				let sendLogsResult = self.httpClient.sendLogs(
+				let sendLogsResult = self.logApi.sendLogs(
 					input: input,
 					userData: UserData(
 						idfa: adIds.idfa,
@@ -196,7 +174,7 @@ class HttpLoggerImpl: HttpLogger {
 					switch result {
 					case let .failure(error):
 						_ = f.fulfill(.failure(error))
-						self.fallback.error("Failed to publish \(messages.count) log messages and \(metrics.count) metrics", error)
+						self.fallback.warn("Failed to publish \(messages.count) log messages and \(metrics.count) metrics", LoggerFieldsImpl().with("exception", error))
 					case let .success(data):
 						_ = f.fulfill(.success(data))
 						self.fallback.debug("Published \(messages.count) log messages and \(metrics.count) metrics")
@@ -224,36 +202,6 @@ class HttpLoggerImpl: HttpLogger {
 	private func addFields(_ fields: LoggerFields, _ encodedFields: inout [String: String]) {
 		for field in fields.getFields() {
 			encodedFields[field.key] = field.value
-		}
-	}
-
-	private func filterMessagesIfNeeded(_ messages: [DTOLogMessage]) -> [DTOLogMessage] {
-		guard let logConfig else { return messages }
-
-		return messages.filter { message in
-			let result = logConfig.rules.match(name: message.message, dimensions: message.fields)
-
-			if !result.drop {
-				return true
-			}
-
-			fallback.debug("Dropping message", LoggerFieldsImpl().with("message", message.message))
-
-			return false
-		}
-	}
-
-	private func filterMetricsIfNeeded(_ metrics: [DTOLogMetric]) -> [DTOLogMetric] {
-		guard let metricConfig else { return metrics }
-
-		return metrics.filter { metric in
-			let drop = metricConfig.rules.match(name: metric.metric, dimensions: metric.dimensions).drop
-
-			if drop {
-				fallback.debug("Dropping metric", LoggerFieldsImpl().with("metric", metric.metric))
-			}
-
-			return !drop
 		}
 	}
 }

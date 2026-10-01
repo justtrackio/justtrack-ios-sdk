@@ -8,18 +8,21 @@ final class DefaultAnrDetector {
 	private let threshold: TimeInterval
 	private let logger: HttpLogger
 	private let mainThreadPthread: pthread_t
+	private let skipMonitoringForTesting: Bool
 
-	private var anrHandler: ((AnrReport) -> Void)?
+	var anrHandler: ((AnrReport) -> Void)?
 	private var lastHandlerId: Int?
 
 	init(
 		checkInterval: TimeInterval = 4,
 		threshold: TimeInterval = 2,
-		logger: HttpLogger
+		logger: HttpLogger,
+		skipMonitoringForTesting: Bool = false
 	) {
 		self.checkInterval = checkInterval
 		self.threshold = threshold
 		self.logger = logger
+		self.skipMonitoringForTesting = skipMonitoringForTesting
 
 		// Capture the main thread's pthread handle during initialization
 		// This must be called from the main thread
@@ -198,6 +201,10 @@ final class DefaultAnrDetector {
 			return
 		}
 
+		handleReport(report)
+	}
+
+	func handleReport(_ report: AnrReport) {
 		for callStack in report.callStacks {
 			for call in callStack.calls {
 				if call.package.contains(String.sdkPackageName) {  // swiftlint:disable:this for_where
@@ -207,6 +214,10 @@ final class DefaultAnrDetector {
 				}
 			}
 		}
+	}
+
+	func syncForTesting() {
+		queue.sync {}
 	}
 
 	private func logError(
@@ -231,7 +242,9 @@ extension DefaultAnrDetector: AnrDetector {
 			self.anrHandler = handler
 			let handlerId = (self.lastHandlerId ?? 0) + 1
 			self.lastHandlerId = handlerId
-			self.performMonitoring(handlerId: handlerId)
+			if !self.skipMonitoringForTesting {
+				self.performMonitoring(handlerId: handlerId)
+			}
 		}
 	}
 

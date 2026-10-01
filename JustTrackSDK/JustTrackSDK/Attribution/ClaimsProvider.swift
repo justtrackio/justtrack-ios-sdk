@@ -84,7 +84,7 @@ final class ClaimsProviderImpl: ClaimsProvider {
 					if FetchClaimErrorClassifier.isUnreachableError(error) {
 						self.logger.debug("Getting \(type) claim failed, protocol is not supported", LoggerFieldsImpl().with("exception", error))
 					} else {
-						self.logger.error("Getting \(type) claim failed", error)
+						self.logger.warn("Getting \(type) claim failed", LoggerFieldsImpl().with("exception", error))
 					}
 				case .timeout:
 					self.logger.debug("Getting \(type) claim timed out")

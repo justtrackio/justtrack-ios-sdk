@@ -45,12 +45,12 @@ struct VersionImpl: Version, Comparable {
 	}
 }
 
-func readAppVersion() -> AppVersion {
-	let bundleVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
-	let bundleShortVersionString = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+func readAppVersion(from bundle: Bundle = .main) -> AppVersion {
+	let bundleVersion = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+	let bundleShortVersionString = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
 	return AppVersionImpl(code: bundleVersion, name: bundleShortVersionString)
 }
 
 func currentSdkVersion() -> any Version {
-	return VersionImpl(major: 7, minor: 1, patch: 0, name: "7.1.0")
+	return VersionImpl(major: 8, minor: 0, patch: 0, name: "8.0.0")
 }

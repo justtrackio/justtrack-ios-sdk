@@ -1,8 +1,70 @@
 import MetricKit
 
+// Pure logic struct with no @available constraint — fully unit-testable.
+struct MetricKitAnrReportProcessor {
+	var anrHandler: ((AnrReport) -> Void)?
+
+	func processReports(_ reports: [AnrReport]) {
+		guard let anrHandler else { return }
+
+		reportLoop: for report in reports {
+			for callStack in report.callStacks {
+				for call in callStack.calls {
+					if call.package.contains(String.sdkPackageName) {  // swiftlint:disable:this for_where
+						DispatchQueue.main.async {
+							anrHandler(report)
+						}
+						continue reportLoop
+					}
+				}
+			}
+		}
+	}
+
+	func extractCallsFromJSON(_ json: [String: Any]) -> AnrReport {
+		var calls: [AnrReport.CallStack.Call] = []
+		if let callStacks = json["callStacks"] as? [[String: Any]],
+			let firstStack = callStacks.first,
+			let rootFrames = firstStack["callStackRootFrames"] as? [[String: Any]]
+		{
+			for rootFrame in rootFrames {
+				extractCallsFromFrame(rootFrame, into: &calls)
+			}
+		}
+		return AnrReport(
+			timestamp: Date(),
+			callStacks: [
+				AnrReport.CallStack(
+					threadId: "1",
+					calls: calls
+				)
+			]
+		)
+	}
+
+	func extractCallsFromFrame(_ frame: [String: Any], into calls: inout [AnrReport.CallStack.Call]) {
+		let address = frame["address"] as? Int ?? 0
+		let offsetIntoBinaryTextSegment = frame["offsetIntoBinaryTextSegment"] as? Int ?? 0
+		let binaryName = frame["binaryName"] as? String ?? "Unknown"
+		let call = AnrReport.CallStack.Call(
+			address: String(format: "0x%lx", address),
+			addressOffset: String(format: "0x%lx", offsetIntoBinaryTextSegment),
+			symbol: "",
+			offset: "",
+			package: binaryName
+		)
+		calls.append(call)
+		if let subFrames = frame["subFrames"] as? [[String: Any]] {
+			if let firstSubFrame = subFrames.first {
+				extractCallsFromFrame(firstSubFrame, into: &calls)
+			}
+		}
+	}
+}
+
 @available(iOS 14, *)
 final class MetricKitAnrDetector: NSObject, AnrDetector {
-	private var anrHandler: ((AnrReport) -> Void)?
+	private var processor = MetricKitAnrReportProcessor()
 	private let logger: HttpLogger
 
 	init(
@@ -12,12 +74,12 @@ final class MetricKitAnrDetector: NSObject, AnrDetector {
 	}
 
 	func setHandler(_ handler: @escaping (AnrReport) -> Void) {
-		anrHandler = handler
+		processor.anrHandler = handler
 		MXMetricManager.shared.add(self)
 	}
 
 	func removeHandler() {
-		anrHandler = nil
+		processor.anrHandler = nil
 		MXMetricManager.shared.remove(self)
 	}
 
@@ -52,71 +114,18 @@ extension MetricKitAnrDetector: MXMetricManagerSubscriber {
 			reports.append(report)
 		}
 
-		if let anrHandler {
-			reportLoop: for report in reports {
-				for callStack in report.callStacks {
-					for call in callStack.calls {
-						if call.package.contains(String.sdkPackageName) {  // swiftlint:disable:this for_where
-							DispatchQueue.main.async {
-								anrHandler(report)
-							}
-							continue reportLoop
-						}
-					}
-				}
-			}
-		}
+		processor.processReports(reports)
 	}
 
 	private func extractReport(from callStackTree: MXCallStackTree) -> AnrReport? {
 		do {
 			if let json = try JSONSerialization.jsonObject(with: callStackTree.jsonRepresentation(), options: []) as? [String: Any] {
-				return extractCallsFromJSON(json)
+				return processor.extractCallsFromJSON(json)
 			}
 		} catch {
 			logError("Parsing call stack for calls failure", error: error)
 		}
 
 		return nil
-	}
-
-	private func extractCallsFromJSON(_ json: [String: Any]) -> AnrReport {
-		var calls: [AnrReport.CallStack.Call] = []
-		if let callStacks = json["callStacks"] as? [[String: Any]],
-			let firstStack = callStacks.first,
-			let rootFrames = firstStack["callStackRootFrames"] as? [[String: Any]]
-		{
-			for rootFrame in rootFrames {
-				extractCallsFromFrame(rootFrame, into: &calls)
-			}
-		}
-		return AnrReport(
-			timestamp: Date(),
-			callStacks: [
-				AnrReport.CallStack(
-					threadId: "1",
-					calls: calls
-				)
-			]
-		)
-	}
-
-	private func extractCallsFromFrame(_ frame: [String: Any], into calls: inout [AnrReport.CallStack.Call]) {
-		let address = frame["address"] as? Int ?? 0
-		let offsetIntoBinaryTextSegment = frame["offsetIntoBinaryTextSegment"] as? Int ?? 0
-		let binaryName = frame["binaryName"] as? String ?? "Unknown"
-		let call = AnrReport.CallStack.Call(
-			address: String(format: "0x%lx", address),
-			addressOffset: String(format: "0x%lx", offsetIntoBinaryTextSegment),
-			symbol: "",
-			offset: "",
-			package: binaryName
-		)
-		calls.append(call)
-		if let subFrames = frame["subFrames"] as? [[String: Any]] {
-			if let firstSubFrame = subFrames.first {
-				extractCallsFromFrame(firstSubFrame, into: &calls)
-			}
-		}
 	}
 }

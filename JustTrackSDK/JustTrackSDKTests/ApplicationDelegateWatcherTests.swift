@@ -70,4 +70,65 @@ final class AppDelegateWatcherTests: XCTestCase {
 
 		XCTAssertEqual(self.reportee.calls, [.applicationWillTerminate])
 	}
+
+	// MARK: - uninstall
+
+	func testUninstallOnMainThreadNilsReporteeImmediately() {
+		let watcher = AppDelegateWatcher()
+		watcher.reportee = reportee
+
+		// Call from main thread (XCTest runs on main thread)
+		XCTAssertTrue(Thread.isMainThread)
+		watcher.uninstall()
+
+		XCTAssertNil(watcher.reportee)
+	}
+
+	func testUninstallOffMainThreadNilsReporteeAsynchronously() {
+		let watcher = AppDelegateWatcher()
+		watcher.reportee = reportee
+
+		let expectation = self.expectation(description: "uninstall off-main")
+
+		DispatchQueue.global().async {
+			XCTAssertFalse(Thread.isMainThread)
+			watcher.uninstall()
+
+			DispatchQueue.main.async {
+				expectation.fulfill()
+			}
+		}
+
+		waitForExpectations(timeout: 2)
+		XCTAssertNil(watcher.reportee)
+	}
+
+	func testUninstallPreventsCallbacksAfterUninstallOnMainThread() {
+		_ = delegateWatcher
+
+		delegateWatcher.uninstall()
+
+		NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+
+		XCTAssertTrue(reportee.calls.isEmpty)
+	}
+
+	func testUninstallCanBeCalledMultipleTimes() {
+		let watcher = AppDelegateWatcher()
+		watcher.reportee = reportee
+
+		watcher.uninstall()
+		watcher.uninstall()
+
+		XCTAssertNil(watcher.reportee)
+	}
+
+	func testNoReporteeDoesNotCrashOnNotification() {
+		let watcher = AppDelegateWatcher()
+		// reportee not set — should not crash
+
+		NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+		NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+		NotificationCenter.default.post(name: UIApplication.willTerminateNotification, object: nil)
+	}
 }

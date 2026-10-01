@@ -388,16 +388,33 @@ final class LogAggregatorTests: XCTestCase {
 		LogStore().clearForTesting()
 		let sqliteDrive = try DefaultSqliteDriver(databaseName: "JustTrackSDK_DefaultSqliteDriver_Database_\(UUID().uuidString)")
 		let sqliteConsistencyChecker = MockSqliteConsistencyChecker()
+		let httpClient = HttpClientImpl(
+			retryConfig: RetryConfig.defaultConfig,
+			urlSession: URLSession.shared
+		)
+		let requestFactory = RequestFactoryImpl(
+			platformType: .native,
+			apiToken: Self.apiToken,
+			clientId: Self.clientId
+		)
+		let logger = LoggerImpl()
+		let retryConfig = httpClient.retryConfig
+		let attributionApi: AttributionApi = AttributionApiImpl(httpClient: httpClient, requestFactory: requestFactory, retryConfig: retryConfig)
+		let privacyApi: PrivacyApi = PrivacyApiImpl(httpClient: httpClient, requestFactory: requestFactory)
+		let eventApi: EventApi = EventApiImpl(httpClient: httpClient, requestFactory: requestFactory, retryConfig: retryConfig, logger: logger)
+		let logApi: LogApi = LogApiImpl(httpClient: httpClient, requestFactory: requestFactory)
+		let userPropertyApi: UserPropertyApi = UserPropertyApiImpl(httpClient: httpClient, requestFactory: requestFactory)
+		let remoteConfigApi: RemoteConfigApi = RemoteConfigApiImpl(httpClient: httpClient, requestFactory: requestFactory)
 		let sdk = try JustTrackSdkImpl(
 			attributionSettings: AttributionSettings(),
-			logger: LoggerImpl(),
-			httpClient: HttpClientImpl(
-				platformType: .native,
-				apiToken: Self.apiToken,
-				retryConfig: RetryConfig.defaultConfig,
-				urlSession: URLSession.shared,
-				clientId: Self.clientId
-			),
+			logger: logger,
+			httpClient: httpClient,
+			attributionApi: attributionApi,
+			privacyApi: privacyApi,
+			eventApi: eventApi,
+			logApi: logApi,
+			userPropertyApi: userPropertyApi,
+			remoteConfigApi: remoteConfigApi,
 			sessionManagerBuilder: { sdk in
 				SessionManagerImpl(sdk)
 			},

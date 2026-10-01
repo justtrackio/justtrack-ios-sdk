@@ -54,7 +54,7 @@ public final class JusttrackUnityAdsAdapter: JusttrackAdapter {
 				promise.resolve(())
 			},
 			onFailure: { error in
-				logger.error("[\(JusttrackUnityAdsAdapter.name)] Couldn't integrate UnityAds: \(error.localizedDescription)")
+				logger.warn("[\(JusttrackUnityAdsAdapter.name)] Couldn't integrate UnityAds: \(error.localizedDescription)")
 				promise.reject(error)
 			}
 		)

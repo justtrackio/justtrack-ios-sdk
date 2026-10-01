@@ -13,23 +13,30 @@ Thank you for your interest in contributing to the justtrack SDK. This document 
 
 ## Prerequisites
 
-- Xcode 16.0 or later
+- Xcode (latest stable version recommended)
+- [mise](https://mise.jdx.dev) (manages the pinned SwiftLint / pre-commit versions)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (used to generate the `.xcodeproj`)
-- [SwiftLint](https://github.com/realm/SwiftLint) (install via Homebrew: `brew install swiftlint`)
 - [swift-format](https://github.com/apple/swift-format) (install via Homebrew: `brew install swift-format`)
 - CocoaPods (for the integration app and adapter testing)
 
 ## Setup
 
-1. Copy `local.properties` and place it under `JustTrackSDK/`.
-2. Run `make` inside the `JustTrackSDK/` directory to generate the Xcode project:
+1. Install the pinned tooling and the git hooks:
+
+   ```bash
+   mise trust && mise install
+   pre-commit install
+   ```
+
+2. Copy `local.properties` and place it under `JustTrackSDK/`.
+3. Run `make` inside the `JustTrackSDK/` directory to generate the Xcode project:
 
    ```bash
    cd JustTrackSDK
    make
    ```
 
-3. Open the generated `JustTrackSDK.xcodeproj` in Xcode.
+4. Open the generated `JustTrackSDK.xcodeproj` in Xcode.
 
 ## Code Quality
 

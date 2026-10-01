@@ -3,6 +3,7 @@ public enum PlatformType: String, CustomStringConvertible {
 	case unity
 	case reactNative
 	case flutter
+	case godot
 
 	public var description: String {
 		switch self {
@@ -14,6 +15,8 @@ public enum PlatformType: String, CustomStringConvertible {
 			return "ReactNative; iOS"
 		case .flutter:
 			return "Flutter; iOS"
+		case .godot:
+			return "Godot; iOS"
 		}
 	}
 
@@ -27,6 +30,8 @@ public enum PlatformType: String, CustomStringConvertible {
 			return "react-native"
 		case .flutter:
 			return "flutter"
+		case .godot:
+			return "godot"
 		}
 	}
 }

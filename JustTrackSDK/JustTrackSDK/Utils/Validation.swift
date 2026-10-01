@@ -61,7 +61,7 @@ func isValid(dimension: String) -> Bool {
 }
 
 func isValid(dimension: String, value: String) -> Bool {
-	if dimension == Dimension.jtToken.stringValue {
+	if dimension == Dimension.jtToken.rawValue {
 		// the token dimension is always valid - we can't restrict what apple stores in the receipt file
 		return true
 	}

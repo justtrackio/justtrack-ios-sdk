@@ -101,7 +101,7 @@ class SessionManagerImpl: SessionManager {
 
 	private func reportLastSession() {
 		if let lastSession = Session(restoreFrom: .standard) {
-			_ = endSession(sessionToEnd: lastSession, sessionLastTick: lastSession.sessionLastTick)
+			lastSessionId = endSession(sessionToEnd: lastSession, sessionLastTick: lastSession.sessionLastTick)
 		}
 	}
 
@@ -116,17 +116,17 @@ class SessionManagerImpl: SessionManager {
 struct Session {
 	internal static let key = "io.justtrack.attribution.session"
 
-	fileprivate let sessionId: StringID
-	fileprivate let sessionStart: Date
-	fileprivate let sessionLastTick: Date
+	internal let sessionId: StringID
+	internal let sessionStart: Date
+	internal let sessionLastTick: Date
 
-	fileprivate init() {
+	internal init() {
 		sessionId = StringID()
 		sessionStart = Date()
 		sessionLastTick = sessionStart
 	}
 
-	fileprivate init?(restoreFrom: UserDefaults) {
+	internal init?(restoreFrom: UserDefaults) {
 		guard let dict = restoreFrom.dictionary(forKey: Session.key) else {
 			return nil
 		}
@@ -150,7 +150,7 @@ struct Session {
 		self.sessionLastTick = sessionLastTick
 	}
 
-	fileprivate func persist(storeTo: UserDefaults) {
+	internal func persist(storeTo: UserDefaults) {
 		let dict: [String: Any] = [
 			"sessionId": sessionId.value,
 			"sessionStart": sessionStart,
@@ -160,7 +160,7 @@ struct Session {
 		storeTo.setValue(dict, forKey: Session.key)
 	}
 
-	fileprivate func remove(from: UserDefaults) {
+	internal func remove(from: UserDefaults) {
 		from.removeObject(forKey: Session.key)
 	}
 }

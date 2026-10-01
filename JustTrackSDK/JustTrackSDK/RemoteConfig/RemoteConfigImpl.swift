@@ -1,7 +1,7 @@
 import Foundation
 
 final class RemoteConfigImpl: JusttrackRemoteConfig {
-	private let httpClient: HttpClient
+	private let remoteConfigApi: RemoteConfigApi
 	private let logger: Logger
 	private let store: RemoteConfigStore
 	private let sdkVersion: any Version
@@ -21,7 +21,7 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 	private var assignmentsByKey: [String: JusttrackExperimentAssignment] = [:]
 
 	init(
-		httpClient: HttpClient,
+		remoteConfigApi: RemoteConfigApi,
 		logger: Logger,
 		store: RemoteConfigStore = RemoteConfigStore(),
 		sdkVersion: any Version,
@@ -33,7 +33,7 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 		getFirstSdkInitTimestamp: @escaping () -> Date?,
 		getInstallTimestamp: @escaping () -> Date?
 	) {
-		self.httpClient = httpClient
+		self.remoteConfigApi = remoteConfigApi
 		self.logger = logger
 		self.store = store
 		self.sdkVersion = sdkVersion
@@ -116,7 +116,7 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 					installTimestamp: self.getInstallTimestamp().map { Int($0.timeIntervalSince1970) }
 				)
 
-				self.httpClient.getAssignments(
+				self.remoteConfigApi.getAssignments(
 					parameters: parameters,
 					userData: userData
 				).observe { [weak self] result in
@@ -163,6 +163,8 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 			return
 		}
 
+		let assignments = assignments.filter { $0.isPending }
+
 		if assignments.isEmpty {
 			logger.debug("RemoteConfig: No assignments to activate", LoggerFieldsImpl())
 			completion(nil)
@@ -190,7 +192,7 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 					experimentIds: experimentIds
 				)
 
-				self.httpClient.postEnrollments(
+				self.remoteConfigApi.postEnrollments(
 					request: request,
 					userData: userData
 				).observe { [weak self] result in
@@ -276,8 +278,7 @@ final class RemoteConfigImpl: JusttrackRemoteConfig {
 				return
 			}
 
-			let pendingAssignments = self.allAssignments.filter { $0.isPending }
-			self.activate(pendingAssignments, completion: completion)
+			self.activate(self.allAssignments, completion: completion)
 		}
 	}
 

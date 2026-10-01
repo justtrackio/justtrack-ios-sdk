@@ -7,6 +7,15 @@ struct InfoView: View {
 	@State private var copiedItemName = ""
 	@State private var showingToast = false
 
+	@State private var customUserId = ""
+	@State private var firebaseAppInstanceId = ""
+	@State private var isDisplayingAlert = false
+	@State private var alert: (title: String, message: String?)? {
+		didSet {
+			isDisplayingAlert = alert != nil
+		}
+	}
+
 	private let sdk: JustTrackSdk
 
 	init(initResult: InitResult) {
@@ -53,6 +62,22 @@ struct InfoView: View {
 							showingToast = true
 						}
 					}
+
+					Section(header: SectionHeaderView("User IDs")) {
+						idRow(
+							title: "Custom User ID",
+							placeholder: "my-user-id",
+							text: $customUserId,
+							action: setCustomUserId
+						)
+
+						idRow(
+							title: "Firebase App Instance ID",
+							placeholder: "firebase-app-instance-id",
+							text: $firebaseAppInstanceId,
+							action: setFirebaseAppInstanceId
+						)
+					}
 				}
 
 				if showingToast {
@@ -72,6 +97,63 @@ struct InfoView: View {
 			}
 			.navigationTitle("Info")
 			.onAppear { fetchUserData() }
+		}
+		.alert(isPresented: $isDisplayingAlert) {
+			Alert(
+				title: Text(alert?.title ?? ""),
+				message: Text(alert?.message ?? ""),
+				dismissButton: .default(Text("OK")) {
+					alert = nil
+				}
+			)
+		}
+	}
+
+	private func idRow(
+		title: String,
+		placeholder: String,
+		text: Binding<String>,
+		action: @escaping () -> Void
+	) -> some View {
+		HStack(spacing: 12) {
+			VStack(alignment: .leading) {
+				ListItemTitleView(title)
+				TextField(placeholder, text: text)
+					.autocapitalization(.none)
+					.disableAutocorrection(true)
+					.fontForListItemText()
+			}
+
+			CompactButton("Set", action: action)
+				.disabled(text.wrappedValue.isEmpty)
+		}
+	}
+
+	private func setCustomUserId() {
+		let userId = customUserId
+		guard !userId.isEmpty else { return }
+
+		sdk.set(userId: userId).observe(on: .main) { result in
+			switch result {
+			case .success:
+				alert = ("Custom User ID Set", "Successfully set custom user ID: \(userId)")
+			case let .failure(error):
+				alert = ("Custom User ID Failed", "Failed to set custom user ID: \(error.localizedDescription)")
+			}
+		}
+	}
+
+	private func setFirebaseAppInstanceId() {
+		let appInstanceId = firebaseAppInstanceId
+		guard !appInstanceId.isEmpty else { return }
+
+		sdk.set(firebaseAppInstanceId: appInstanceId).observe(on: .main) { result in
+			switch result {
+			case .success:
+				alert = ("Firebase App Instance ID Set", "Successfully set Firebase app instance ID: \(appInstanceId)")
+			case let .failure(error):
+				alert = ("Firebase App Instance ID Failed", "Failed to set Firebase app instance ID: \(error.localizedDescription)")
+			}
 		}
 	}
 

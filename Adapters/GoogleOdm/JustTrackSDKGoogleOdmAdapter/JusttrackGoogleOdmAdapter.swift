@@ -4,7 +4,7 @@ import JustTrackSDK
 public final class JusttrackGoogleOdmAdapter: JusttrackAdapter {
 	static let name = "\(JusttrackGoogleOdmAdapter.self) v\(JusttrackGoogleOdmAdapter.version)"
 
-	static let version = "1.0.0-rc1"
+	static let version = "1.0.1"
 
 	public init() {
 	}
@@ -16,13 +16,19 @@ public final class JusttrackGoogleOdmAdapter: JusttrackAdapter {
 		func log(
 			error: Error
 		) {
-			logger.error("[\(JusttrackGoogleOdmAdapter.name)] Couldn't integrate Google ODM: \(error.localizedDescription)")
+			logger.warn("[\(JusttrackGoogleOdmAdapter.name)] Couldn't integrate Google ODM: \(error.localizedDescription)")
 		}
 
 		let promise = FutureImpl<Void>()
 
 		JusttrackObjCGoogleOdmAdapter().fetchOdmInfo(
 			onSuccess: { odmInfo in
+				guard let odmInfo else {
+					logger.info("[\(JusttrackGoogleOdmAdapter.name)] No Google ODM info available")
+					promise.resolve(())
+					return
+				}
+
 				sdk.set(odmInfo: odmInfo).observe { settingResult in
 					switch settingResult {
 					case let .failure(error):

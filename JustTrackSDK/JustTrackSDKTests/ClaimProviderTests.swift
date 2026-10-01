@@ -40,7 +40,13 @@ final class ClaimProviderTests: XCTestCase {
 		let sdk = try! JustTrackSdkImpl(
 			attributionSettings: AttributionSettings(),
 			logger: logger,
-			httpClient: testHttpClient,
+			httpClient: StubHttpClient(),
+			attributionApi: testHttpClient,
+			privacyApi: testHttpClient,
+			eventApi: testHttpClient,
+			logApi: testHttpClient,
+			userPropertyApi: testHttpClient,
+			remoteConfigApi: testHttpClient,
 			sessionManagerBuilder: SessionManagerImpl.init,
 			connectivityManagerBuilder: { _ in TestConnectivityManager() },
 			adTrackingProvider: TestAdTrackingProvider(idfa: JustTrackSdkTests.idfa, idfv: JustTrackSdkTests.idfv),
@@ -79,7 +85,7 @@ private class TestClaimProviderHttpClient: BaseTestHttpClient {
 		}
 		self.expectedClaims = expectedClaims
 		self.signResults = signResults.reversed()
-		super.init(changeInstallId: false, testGroupId: nil, allowAttributionRequest: true)
+		super.init(changeInstallId: false, allowAttributionRequest: true)
 	}
 
 	override func sendAttributionRequest(request: DTOAttributionRequest, userData: UserData) -> Future<Data> {

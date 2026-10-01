@@ -9,7 +9,7 @@ all: run_scripts generate_project
 
 run_scripts:
 	$(call print_message,Running scripts)
-	./scripts/generate.js
+	./scripts/syncSdkVersion.js
 	./scripts/updateTestAppVersion.sh
 	./scripts/generateCredentials.sh
 

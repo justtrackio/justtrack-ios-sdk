@@ -386,6 +386,10 @@ final class DefaultSqliteDriver: SqliteDriver {
 		}
 	}
 
+	func closeDatabaseForTesting() throws {
+		try closeDatabase()
+	}
+
 	private func closeDatabase() throws {
 		guard db != nil else { return }
 

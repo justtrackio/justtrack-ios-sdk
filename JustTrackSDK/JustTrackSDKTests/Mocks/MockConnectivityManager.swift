@@ -7,6 +7,7 @@ final class MockConnectivityManager: ConnectivityManager {
 	}
 
 	var calls = [Call]()
+	var connectionType: ConnectionType = .wifi
 
 	var registerOnReconnectSubscriptions = SubscriptionManager<Void>()
 

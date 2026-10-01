@@ -35,7 +35,14 @@ final class DefaultCrashReporter: CrashReporter {
 	private static let crashesDirectory = "justtrack/crashes"
 	private static let jsCrashesDirectory = "justtrack/js_crashes"
 
-	fileprivate init() {
+	private let fileManager: FileManager
+
+	fileprivate init(fileManager: FileManager = .default) {
+		self.fileManager = fileManager
+	}
+
+	convenience init(testFileManager: FileManager) {
+		self.init(fileManager: testFileManager)
 	}
 
 	func startMonitoring() {
@@ -52,10 +59,10 @@ final class DefaultCrashReporter: CrashReporter {
 	}
 
 	func saveCrashReport(_ report: CrashReport, timestamp: Double) {
-		guard let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+		guard let documentsUrl = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
 
 		let crashesDir = documentsUrl.appendingPathComponent(Self.crashesDirectory)
-		try? FileManager.default.createDirectory(at: crashesDir, withIntermediateDirectories: true, attributes: nil)
+		try? fileManager.createDirectory(at: crashesDir, withIntermediateDirectories: true, attributes: nil)
 
 		let filename = "\(Int(timestamp)).json"
 		let reportUrl = crashesDir.appendingPathComponent(filename)
@@ -104,7 +111,7 @@ final class DefaultCrashReporter: CrashReporter {
 		completionHandler: @escaping (Result<T, Error>) -> Void
 	) {
 		DispatchQueue.global(qos: .userInitiated).async {
-			guard let documentsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+			guard let documentsUrl = self.fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
 				let error = NSError(
 					domain: "DefaultCrashReporter",
 					code: 1,
@@ -118,12 +125,12 @@ final class DefaultCrashReporter: CrashReporter {
 
 			let crashesDir = documentsUrl.appendingPathComponent(directory)
 
-			guard FileManager.default.fileExists(atPath: crashesDir.path) else {
+			guard self.fileManager.fileExists(atPath: crashesDir.path) else {
 				return
 			}
 
 			do {
-				let files = try FileManager.default.contentsOfDirectory(at: crashesDir, includingPropertiesForKeys: nil)
+				let files = try self.fileManager.contentsOfDirectory(at: crashesDir, includingPropertiesForKeys: nil)
 					.filter { $0.pathExtension == "json" }
 					.sorted { $0.lastPathComponent < $1.lastPathComponent }
 
@@ -134,7 +141,7 @@ final class DefaultCrashReporter: CrashReporter {
 						DispatchQueue.main.async {
 							completionHandler(.success(report))
 						}
-						try FileManager.default.removeItem(at: fileUrl)
+						try self.fileManager.removeItem(at: fileUrl)
 					} catch {
 						DispatchQueue.main.async {
 							completionHandler(.failure(error))
@@ -190,6 +197,27 @@ private let exceptionHandler: @convention(c) (NSException) -> Void = { exception
 	}
 }
 
+func signalName(for signal: Int32) -> String {
+	switch signal {
+	case SIGABRT:
+		return "SIGABRT"
+	case SIGILL:
+		return "SIGILL"
+	case SIGSEGV:
+		return "SIGSEGV"
+	case SIGFPE:
+		return "SIGFPE"
+	case SIGBUS:
+		return "SIGBUS"
+	case SIGPIPE:
+		return "SIGPIPE"
+	case SIGTRAP:
+		return "SIGTRAP"
+	default:
+		return "Unknown Signal \(signal)"
+	}
+}
+
 private let signalHandler: @convention(c) (Int32, UnsafeMutablePointer<__siginfo>?, UnsafeMutableRawPointer?) -> Void = { signal, info, _ in
 	let originalErrno = errno
 
@@ -210,26 +238,7 @@ private let signalHandler: @convention(c) (Int32, UnsafeMutablePointer<__siginfo
 
 	if callStack.containsSDK {
 		let report = CrashReport.SignalReport(
-			name: {
-				switch signal {
-				case SIGABRT:
-					return "SIGABRT"
-				case SIGILL:
-					return "SIGILL"
-				case SIGSEGV:
-					return "SIGSEGV"
-				case SIGFPE:
-					return "SIGFPE"
-				case SIGBUS:
-					return "SIGBUS"
-				case SIGPIPE:
-					return "SIGPIPE"
-				case SIGTRAP:
-					return "SIGTRAP"
-				default:
-					return "Unknown Signal \(signal)"
-				}
-			}(),
+			name: signalName(for: signal),
 			callStack: callStack,
 			info: CrashReport.SignalReport.Info(t: info?.pointee)
 		)

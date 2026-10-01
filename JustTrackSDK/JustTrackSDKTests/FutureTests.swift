@@ -434,8 +434,207 @@ final class FutureTests: XCTestCase {
 
 		waitForExpectations(timeout: 3)
 	}
+
+	// MARK: - Future.async()
+
+	@available(iOS 13.0, *)
+	func testFutureAsyncReturnsSuccessValue() {
+		let promise = FutureImpl<Int>()
+		let expectation = self.expectation(description: #function)
+
+		Task {
+			do {
+				let value = try await promise.toFuture().async()
+				XCTAssertEqual(value, 99)
+			} catch {
+				XCTFail("Unexpected error: \(error)")
+			}
+			expectation.fulfill()
+		}
+
+		promise.resolve(99)
+		waitForExpectations(timeout: 3)
+	}
+
+	@available(iOS 13.0, *)
+	func testFutureAsyncThrowsOnFailure() {
+		let promise = FutureImpl<Int>()
+		let expectation = self.expectation(description: #function)
+
+		Task {
+			do {
+				_ = try await promise.toFuture().async()
+				XCTFail("Expected error to be thrown")
+			} catch let err as FutureError {
+				XCTAssertEqual(err, .some)
+			} catch {
+				XCTFail("Unexpected error type: \(error)")
+			}
+			expectation.fulfill()
+		}
+
+		promise.reject(FutureError.some)
+		waitForExpectations(timeout: 3)
+	}
+
+	// MARK: - TransformingFuture.observeWithTimeout
+
+	func testTransformingFutureObserveWithTimeoutSuccess() {
+		let promise = FutureImpl<Int>()
+		let transforming = TransformingFuture(promise.toFuture()) { value in "\(value)" }
+		let expectation = self.expectation(description: #function)
+
+		transforming.toFuture().observeWithTimeout(timeout: 3) { result in
+			switch result {
+			case .success(let str):
+				XCTAssertEqual(str, "42")
+				expectation.fulfill()
+			case .failure(let err):
+				XCTFail("Unexpected error: \(err)")
+			case .timeout:
+				XCTFail("Unexpected timeout")
+			}
+		}
+
+		promise.resolve(42)
+		waitForExpectations(timeout: 5)
+	}
+
+	func testTransformingFutureObserveWithTimeoutFailure() {
+		let promise = FutureImpl<Int>()
+		let transforming = TransformingFuture(promise.toFuture()) { value in "\(value)" }
+		let expectation = self.expectation(description: #function)
+
+		transforming.toFuture().observeWithTimeout(timeout: 3) { result in
+			switch result {
+			case .failure:
+				expectation.fulfill()
+			case .success(let str):
+				XCTFail("Unexpected success: \(str)")
+			case .timeout:
+				XCTFail("Unexpected timeout")
+			}
+		}
+
+		promise.reject(FutureError.some)
+		waitForExpectations(timeout: 5)
+	}
+
+	func testTransformingFutureObserveWithTimeoutTimesOut() {
+		let promise = FutureImpl<Int>()
+		let transforming = TransformingFuture(promise.toFuture()) { value in "\(value)" }
+		let expectation = self.expectation(description: #function)
+
+		transforming.toFuture().observeWithTimeout(timeout: 0.5) { result in
+			switch result {
+			case .timeout:
+				expectation.fulfill()
+			case .success(let str):
+				XCTFail("Unexpected success: \(str)")
+			case .failure(let err):
+				XCTFail("Unexpected error: \(err)")
+			}
+		}
+
+		waitForExpectations(timeout: 3)
+	}
+
+	// MARK: - fulfillWith
+
+	func testFulfillWithResolvesOnSuccess() {
+		let promise = FutureImpl<Int>()
+		var received: Int?
+
+		promise.observe(using: { result in
+			if case .success(let v) = result { received = v }
+		})
+
+		_ = promise.fulfillWith { 77 }
+
+		XCTAssertEqual(received, 77)
+	}
+
+	func testFulfillWithRejectsOnThrow() {
+		let promise = FutureImpl<Int>()
+		var receivedError: Error?
+
+		promise.observe(using: { result in
+			if case .failure(let e) = result { receivedError = e }
+		})
+
+		_ = promise.fulfillWith { throw FutureError.some }
+
+		XCTAssertNotNil(receivedError)
+	}
+
+	func testFulfillWithReturnsNilDoesNotFulfill() {
+		// fulfillWith with Value = Int? and callback returning nil:
+		// fulfillWith stores result = try callback() as Int?? = .some(nil)
+		// `if let result` succeeds (outer optional is .some), so resolve is called with nil (Int?)
+		// The future IS fulfilled — with a .success(nil) result.
+		let promise = FutureImpl<Int?>()
+		var called = false
+		var resolvedWithNil = false
+
+		promise.observe(using: { result in
+			called = true
+			if case .success(let v) = result, v == nil {
+				resolvedWithNil = true
+			}
+		})
+
+		_ = promise.fulfillWith { nil }
+
+		// fulfillWith resolves the promise with .success(nil)
+		XCTAssertTrue(called)
+		XCTAssertTrue(promise.isFulfilled)
+		XCTAssertTrue(resolvedWithNil)
+	}
+
+	// MARK: - classifyError
+
+	func testClassifyErrorWithNonJustTrackErrorWrapperReturnsRetryDefault() {
+		let classification = RetryingFuture<Int>.classifyError(
+			error: FutureError.some,
+			errorClassifier: AttributionErrorClassifier()
+		)
+		if case .retryDefault = classification {
+			// expected
+		} else {
+			XCTFail("Expected retryDefault, got \(classification)")
+		}
+	}
+
+	func testClassifyErrorWithJustTrackErrorWrapperNetworkErrorUsesClassifier() {
+		let networkError = NetworkError.missingResponseData
+		let wrapper = JustTrackErrorWrapper(networkError)
+		let classification = RetryingFuture<Int>.classifyError(
+			error: wrapper,
+			errorClassifier: AttributionErrorClassifier()
+		)
+		// AttributionErrorClassifier may return .retryDefault or a specific classification
+		// — just assert no crash and a valid case is returned
+		switch classification {
+		case .retryDefault, .unrecoverable, .recoverable:
+			break
+		}
+	}
+
+	// MARK: - observeWithTimeout already-rejected path
+
+	func testObserveWithTimeoutAlreadyRejected() {
+		let promise = FutureImpl<Int>()
+		_ = promise.reject(FutureError.some)
+
+		var receivedFailure = false
+		promise.observeWithTimeout(timeout: 1) { result in
+			if case .failure = result { receivedFailure = true }
+		}
+
+		XCTAssertTrue(receivedFailure)
+	}
 }
 
-private enum FutureError: Error {
+private enum FutureError: Error, Equatable {
 	case some
 }

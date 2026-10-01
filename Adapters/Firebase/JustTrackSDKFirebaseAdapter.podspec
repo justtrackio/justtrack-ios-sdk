@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
 The JustTrackSDKFirebaseAdapter allows you to integrate Firebase with the justtrack SDK.
                        DESC
 
-  s.homepage         = 'https://docs.justtrack.io/sdk/6.0.x/ios/'
+  s.homepage         = 'https://docs.justtrack.io/sdk/integrations'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.authors          = { 'justtrack' => 'https://justtrack.io/contact/' }
   s.source           = { :http => 'https://sdk.justtrack.io/pods/JustTrackSDKFirebaseAdapter/JustTrackSDKFirebaseAdapter-' + s.version.to_s + '.zip', :flatten => false }

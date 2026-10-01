@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
   s.name             = 'JustTrackSDKAppLovinAdapter'
-  s.version          = '1.0.1'
+  s.version          = '1.0.2'
   s.summary          = 'AppLovin adapter for justtrack SDK.'
 
   s.description      = <<-DESC
 The JustTrackSDKAppLovinAdapter allows you to integrate AppLovin with the justtrack SDK.
                        DESC
 
-  s.homepage         = 'https://docs.justtrack.io/sdk/6.0.x/ios/'
+  s.homepage         = 'https://docs.justtrack.io/sdk/integrations'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.authors          = { 'justtrack' => 'https://justtrack.io/contact/' }
   s.source           = { :http => 'https://sdk.justtrack.io/pods/JustTrackSDKAppLovinAdapter/JustTrackSDKAppLovinAdapter-' + s.version.to_s + '.zip', :flatten => false }

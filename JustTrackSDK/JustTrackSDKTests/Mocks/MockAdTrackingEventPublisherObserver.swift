@@ -17,6 +17,6 @@ final class MockAdTrackingEventPublisherObserver: AdTrackingEventPublisherObserv
 	}
 
 	func onPublishAdTrackingEvent(_ event: AppEvent) {
-		calls.append(.onPublishAdTrackingEvent(eventName: event.name, eventAction: event.getDimensions()[Dimension.jtAction.stringValue]))
+		calls.append(.onPublishAdTrackingEvent(eventName: event.name, eventAction: event.getDimensions()[Dimension.jtAction.rawValue]))
 	}
 }

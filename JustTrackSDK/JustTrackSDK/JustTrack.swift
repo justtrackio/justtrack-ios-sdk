@@ -19,14 +19,14 @@ public final class JustTrack {
 		LoggerImpl().debug("Reset for testing")
 
 		if clearStorage {
-			UserDefaults.standard.removeObject(forKey: CustomUserIdStore.key)
+			UserDefaults.standard.removeObject(forKey: PendingIdStoreKey.customUserIdKey)
+			UserDefaults.standard.removeObject(forKey: PendingIdStoreKey.firebaseAppInstanceIdKey)
 			UserDefaults.standard.removeObject(forKey: EventStore.key)
 			UserDefaults.standard.removeObject(forKey: Session.key)
 			UserDefaults.standard.removeObject(forKey: Store.attributionKey)
 			UserDefaults.standard.removeObject(forKey: Store.timestampsKey)
 			UserDefaults.standard.removeObject(forKey: Store.appVersionAtInstallKey)
 			UserDefaults.standard.removeObject(forKey: Store.currentAppVersionKey)
-			UserDefaults.standard.removeObject(forKey: Store.testGroupIdKey)
 			UserDefaults.standard.removeObject(forKey: Store.postbackConversionValueSetKey)
 			LoggerImpl().debug("Cleared storage for testing")
 		}

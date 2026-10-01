@@ -10,9 +10,8 @@ struct ContentView: View {
             List {
                 Section(header: SectionHeaderView("External")) {
                     NavigationLink("AppLovin", destination: AppLovinSdkInitView())
-                    NavigationLink("ironSource", destination: IronSourceSdkInitView())
+                    NavigationLink("ironSource", destination: IronSourceView())
                     NavigationLink("Firebase", destination: FirebaseView())
-                    NavigationLink("Facebook", destination: FacebookView())
                     NavigationLink("UnityAds", destination: UnityAdsView())
                     NavigationLink("Google ODM", destination: GoogleOdmView())
                 }

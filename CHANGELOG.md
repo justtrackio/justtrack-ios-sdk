@@ -1,5 +1,39 @@
 # justtrack SDK Changelog
 
+## Version 8.0.0 (Sep 15, 2026)
+
+- Promoted `8.0.0-rc2` to stable. This release includes all changes documented in `8.0.0-rc1` through `8.0.0-rc2`, with no additional changes.
+
+## Version 8.0.0-rc2 (Sep 04, 2026)
+
+- Fixed the `User-Agent` header carrying raw non-ASCII characters when the app name or app version contained them. Both fields are now percent-escaped.
+
+## Version 8.0.0-rc1 (Aug 03, 2026)
+
+- Added `.handle(deeplink:)` to `JustTrackSdk`. Call it from `application(_:open:options:)`, `application(_:continue:restorationHandler:)` or SwiftUI's `.onOpenURL`. The SDK extracts the `gbraid` query parameter and includes it in the attribution request, triggering a re-attribution when a new value arrives.
+- Added global dimensions via `.set(globalDimension0:)`, `.set(globalDimension1:)` and `.set(globalDimension2:)`. Values are persisted across sessions and automatically attached to every event as `jt_global_0`, `jt_global_1` and `jt_global_2`. Pass `nil` to clear a dimension. A value set directly on an event takes precedence over the global one.
+- Added `.set(enableConnectionTracking:)` to the SDK builder. When enabled, every tracked event carries a `jt_connection_type` dimension with the value `online` or `offline`. Disabled by default.
+- Added the predefined dimensions `jt_connection_type`, `jt_global_0`, `jt_global_1` and `jt_global_2`.
+- Added an `Action` enum (`view`, `click`) to `JtPurchaseEvent`, together with matching convenience initializers.
+- Added `godot` to `PlatformType`.
+- `Dimension` is now a `String`-backed enum instead of an `Int`-backed one, and its raw values are the wire names (for example `jt_action`). Use `dimension.rawValue` instead of the removed `dimension.stringValue`.
+- `Campaign.id` changed from `Int` to `String` and now contains the campaign's external ID instead of the internal numeric ID.
+- The default remote config fetch interval (`JusttrackRemoteConfigSettings.defaultMinFetchIntervalInSec`) has been reduced from 24 hours to 1 hour.
+- `JusttrackRemoteConfig.activate(_:)` now only enrolls assignments that are still pending. Passing already activated assignments is a no-op instead of sending a redundant enrollment request.
+- The console log prefix changed from `JustTrackSdk:` to `JustTrackSDK:`, and the SDK no longer uses `print`.
+- `.set(firebaseAppInstanceId:)` is now deduplicated the same way the custom user ID is. The same value is not sent twice for the same install, and a pending value is retried on app start, on reconnect and when the install ID changes.
+- More error-level logs have been downgraded to warning or info level (claims, HTTP failures, invalid user input, IDFA retrieval, adapter integration failures).
+- Removed the deprecated `testGroupId` property from `JustTrackSdk`. Use `remoteConfig` or `.setExperimentVariant()` for experiment handling.
+- Removed `AttributionResponse.type`.
+- Removed the `SDKBuilder` protocol. Use `JustTrackSdkBuilder` directly.
+- Removed the Adjoe integration, including the public `AdjoeIntegration` class.
+- Removed `JTInAppPurchaseTracker.h` from the framework's public headers. The in-app purchase tracker is now implemented in Swift and is an internal detail.
+- Removed server-driven filtering of log messages, metrics and events.
+
+## Version 7.1.1 (Jun 08, 2026)
+
+- Bumped the version to keep it aligned with the Android SDK version. No functional changes included in this release.
+
 ## Version 7.1.0 (Mar 06, 2026)
 
 ### Added

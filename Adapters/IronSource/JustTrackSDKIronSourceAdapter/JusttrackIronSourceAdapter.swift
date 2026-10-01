@@ -4,15 +4,9 @@ import JustTrackSDK
 public final class JusttrackIronSourceAdapter: JusttrackAdapter {
 	static let name = "\(JusttrackIronSourceAdapter.self) v\(JusttrackIronSourceAdapter.version)"
 
-	static let version = "1.0.0"
+	static let version = "2.0.0"
 
-	private let customUserId: String?
-
-	public init(
-		customUserId: String? = nil
-	) {
-		self.customUserId = customUserId
-	}
+	public init() {}
 
 	public func integrate(
 		sdk: any JustTrackSdk,
@@ -20,9 +14,8 @@ public final class JusttrackIronSourceAdapter: JusttrackAdapter {
 	) -> Future<Void> {
 		let promise = FutureImpl<Void>()
 
-		JusttrackObjCIronSourceAdapter().integrateCustomUserId(
-			customUserId,
-			impressionDataBlock: { impressionData in
+		JusttrackObjCIronSourceAdapter().integrateImpressionDataBlock(
+			{ impressionData in
 				guard let impressionData = impressionData, let adUnit = impressionData.adUnit else {
 					logger.warn("[\(JusttrackIronSourceAdapter.name)] Received nil impression data")
 					return
@@ -55,7 +48,7 @@ public final class JusttrackIronSourceAdapter: JusttrackAdapter {
 				logger.info("[\(JusttrackIronSourceAdapter.name)] Successfully integrated IronSource")
 				promise.resolve(())
 			}, onFailure: { error in
-				logger.error("[\(JusttrackIronSourceAdapter.name)] Couldn't integrate IronSource: \(error.localizedDescription)")
+				logger.warn("[\(JusttrackIronSourceAdapter.name)] Couldn't integrate IronSource: \(error.localizedDescription)")
 				promise.reject(error)
 			}
 		)

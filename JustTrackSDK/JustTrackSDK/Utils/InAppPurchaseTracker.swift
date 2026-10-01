@@ -1,29 +1,33 @@
 import StoreKit
 
 protocol InAppPurchaseTracker {
-	func start(sdk: JustTrackSdkImpl)
+	func start(handler: InAppPurchaseHandler?)
 	func set(enabled: Bool)
 }
 
 class InAppPurchaseTrackerImpl: InAppPurchaseTracker {
-	private weak var sdk: JustTrackSdkImpl?
+	private weak var handler: InAppPurchaseHandler?
 	private weak var logger: Logger?
 	private var enabled: Bool
-	private let tracker: JTInAppPurchaseTracker
+	private let tracker: JTInAppPurchaseTracking
 
-	init(logger: Logger) {
-		self.sdk = nil
+	convenience init(logger: Logger) {
+		self.init(logger: logger, tracker: JTInAppPurchaseTracker())
+	}
+
+	internal init(logger: Logger, tracker: JTInAppPurchaseTracking) {
+		self.handler = nil
 		self.logger = logger
 		self.enabled = false
-		self.tracker = JTInAppPurchaseTracker()
+		self.tracker = tracker
 	}
 
 	deinit {
 		tracker.removeTransactionObserver()
 	}
 
-	func start(sdk: JustTrackSdkImpl) {
-		self.sdk = sdk
+	func start(handler: InAppPurchaseHandler?) {
+		self.handler = handler
 
 		tracker.addTransactionObserver(
 			self.handle(productId:transactionId:quantity:unitPrice:currency:isSubscription:),
@@ -52,9 +56,9 @@ class InAppPurchaseTrackerImpl: InAppPurchaseTracker {
 		let totalPrice = Money(value: NSDecimalNumber(decimal: unitPrice.decimalValue * Decimal(quantity)).doubleValue, currency: currency)
 
 		if isSubscription {
-			_ = sdk?.forwardInAppPurchase(transactionId: transactionId, subscriptionId: productId, totalPrice: totalPrice)
+			handler?.forwardInAppPurchase(transactionId: transactionId, subscriptionId: productId, totalPrice: totalPrice)
 		} else {
-			_ = sdk?.forwardInAppPurchase(transactionId: transactionId, productId: productId, totalPrice: totalPrice)
+			handler?.forwardInAppPurchase(transactionId: transactionId, productId: productId, totalPrice: totalPrice)
 		}
 	}
 }

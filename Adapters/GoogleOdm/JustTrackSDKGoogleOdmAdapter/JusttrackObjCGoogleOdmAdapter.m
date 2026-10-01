@@ -13,7 +13,7 @@
 	return self;
 }
 
-- (void)fetchOdmInfoOnSuccess:(void (^)(NSString *odmInfo))onSuccess
+- (void)fetchOdmInfoOnSuccess:(void (^)(NSString * _Nullable odmInfo))onSuccess
 					onFailure:(void (^)(NSError *error))onFailure {
 	// Look up ODCConversionManager class from GoogleAdsOnDeviceConversion SDK
 	// Try multiple possible class names for compatibility
@@ -76,7 +76,7 @@
 	// ODCInteractionTypeInstallation = 0 (for app-first-open events)
 	NSInteger interactionType = 0;
 
-	void (^completionHandler)(NSString *, NSError *) = ^(NSString *aggregateConversionInfo, NSError *error) {
+	void (^completionHandler)(NSString * _Nullable, NSError * _Nullable) = ^(NSString * _Nullable aggregateConversionInfo, NSError * _Nullable error) {
 		if (error != nil) {
 			NSLog(@"[JusttrackGoogleOdmAdapter] Fetch error: %@", error.localizedDescription);
 			onFailure(error);
@@ -84,11 +84,7 @@
 		}
 
 		if (aggregateConversionInfo == nil || aggregateConversionInfo.length == 0) {
-			NSLog(@"[JusttrackGoogleOdmAdapter] No ODM info available (expected in test environments)");
-			NSError *nilError = [NSError errorWithDomain:@"JusttrackGoogleOdmAdapter"
-												   code:1205
-											   userInfo:@{NSLocalizedDescriptionKey: @"No ODM info available. This is expected if the app was not installed via a Google Ads campaign."}];
-			onFailure(nilError);
+			onSuccess(nil);
 			return;
 		}
 

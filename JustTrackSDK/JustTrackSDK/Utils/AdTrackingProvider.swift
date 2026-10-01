@@ -144,6 +144,13 @@ public class AdTrackingPermissionRequesterImpl: NSObject, AdTrackingPermissionRe
 	private let logger: Logger
 	private var onBecomeActiveCallbacks: [() -> Void] = []
 
+	/// Returns the current `UIApplication.applicationState`. Internal for
+	/// testing so the inactive branch of `ensureActive(block:)` is reachable
+	/// from unit tests where the simulator UI app is always `.active`.
+	var applicationStateProvider: () -> UIApplication.State = {
+		UIApplication.shared.applicationState
+	}
+
 	init(logger: Logger) {
 		self.logger = logger
 		super.init()
@@ -190,7 +197,7 @@ public class AdTrackingPermissionRequesterImpl: NSObject, AdTrackingPermissionRe
 	}
 
 	private func ensureActive(block: @escaping () -> Void) {
-		switch UIApplication.shared.applicationState {
+		switch applicationStateProvider() {
 		case .active:
 			block()
 		default:
@@ -220,7 +227,7 @@ public class AdTrackingPermissionRequesterImpl: NSObject, AdTrackingPermissionRe
 	}
 
 	@available(iOS 14, *)
-	private static func translateAdTrackingPermission(_ status: ATTrackingManager.AuthorizationStatus) -> AdTrackingStatus {
+	static func translateAdTrackingPermission(_ status: ATTrackingManager.AuthorizationStatus) -> AdTrackingStatus {
 		switch status {
 		case .authorized:
 			return .authorized
@@ -236,7 +243,7 @@ public class AdTrackingPermissionRequesterImpl: NSObject, AdTrackingPermissionRe
 	}
 }
 
-private class AdTrackingLogger: Logger {
+class AdTrackingLogger: Logger {
 	private var sdkLogger: Logger?
 
 	private var pendingCalls: [() -> Void] = []

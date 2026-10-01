@@ -5,10 +5,11 @@ class PListStore {
 	private let fileManager: FileManager
 
 	init(
-		isConsoleLoggingEnabled: Bool
+		isConsoleLoggingEnabled: Bool,
+		fileManager: FileManager = FileManager()
 	) {
 		logger = isConsoleLoggingEnabled ? LoggerImpl() : IdleLogger()
-		fileManager = FileManager()
+		self.fileManager = fileManager
 	}
 
 	func readFile(filename: String) -> [String: Any]? {  // swiftlint:disable:this discouraged_optional_collection

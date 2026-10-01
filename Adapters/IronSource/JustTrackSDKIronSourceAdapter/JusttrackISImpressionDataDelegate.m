@@ -20,12 +20,12 @@
     }
 
     JusttrackISImpressionData *jtImpressionData = [[JusttrackISImpressionData alloc] init];
-    jtImpressionData.adUnit = [impressionData valueForKey:@"ad_unit"];
-    jtImpressionData.adNetwork = [impressionData valueForKey:@"ad_network"];
+    jtImpressionData.adUnit = [impressionData valueForKey:@"adFormat"];
+    jtImpressionData.adNetwork = [impressionData valueForKey:@"adNetwork"];
     jtImpressionData.placement = [impressionData valueForKey:@"placement"];
     jtImpressionData.abTesting = [impressionData valueForKey:@"ab"];
-    jtImpressionData.segmentName = [impressionData valueForKey:@"segment_name"];
-    jtImpressionData.instanceName = [impressionData valueForKey:@"instance_name"];
+    jtImpressionData.segmentName = [impressionData valueForKey:@"segmentName"];
+    jtImpressionData.instanceName = [impressionData valueForKey:@"instanceName"];
     jtImpressionData.revenue = [impressionData valueForKey:@"revenue"];
     
     self.impressionDataBlock(jtImpressionData);

@@ -75,6 +75,19 @@ struct JtEventsView: View {
 				jtProductType: "manual_testing_subscription",
 				count: 41
 			),
+			JtPurchaseEvent(
+				jtAction: .view,
+				jtProductId: "manual_testing_view_product_1",
+				jtToken: "manual_testing_view_token_1",
+				jtProductType: "manual_testing_subscription",
+				count: 1
+			),
+			JtPurchaseEvent(
+				jtAction: .click,
+				jtProductId: "manual_testing_click_product_1",
+				jtToken: "manual_testing_click_token_1",
+				jtProductType: "manual_testing_consumable"
+			),
 			JtAdEvent(
 				jtAction: "manual_testing_load",
 				jtAdBundleId: "manual_testing_123",

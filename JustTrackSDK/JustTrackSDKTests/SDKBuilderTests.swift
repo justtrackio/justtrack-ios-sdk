@@ -169,4 +169,250 @@ final class SDKBuilderTests: XCTestCase {
 		XCTAssertEqual(sdk?.appVersionAtInstall.name, specialVersionName)
 		XCTAssertEqual(sdk?.appVersionAtInstall.code, specialVersionCode)
 	}
+
+	// MARK: Logger Tests
+
+	func testSetLoggerReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(logger: MockLogger())
+
+		XCTAssertTrue(result === builder, "set(logger:) should return the same builder instance for chaining")
+	}
+
+	func testSetLoggerBuildsSdkSuccessfully() throws {
+		let mockLogger = MockLogger()
+
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(logger: mockLogger)
+			.set(isLoggingEnabled: true)
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Tracking Id / Provider Tests
+
+	func testSetTrackingIdReturnsBuilder() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = try builder.set(trackingId: "trk-123", trackingProvider: "providerA")
+
+		XCTAssertTrue(result === builder, "set(trackingId:trackingProvider:) should return the same builder instance for chaining")
+	}
+
+	func testSetTrackingIdThrowsOnInvalidValue() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+
+		XCTAssertThrowsError(try builder.set(trackingId: "müller", trackingProvider: "providerA"))
+		XCTAssertThrowsError(try builder.set(trackingId: "trk-123", trackingProvider: "prövider"))
+	}
+
+	func testSetTrackingIdBuildsSdkSuccessfully() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(trackingId: "trk-123", trackingProvider: "providerA")
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: User Id Tests
+
+	func testSetUserIdReturnsBuilder() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = try builder.set(userId: "user-123")
+
+		XCTAssertTrue(result === builder, "set(userId:) should return the same builder instance for chaining")
+	}
+
+	func testSetUserIdThrowsOnInvalidValue() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+
+		XCTAssertThrowsError(try builder.set(userId: ""))
+	}
+
+	func testSetUserIdBuildsSdkSuccessfully() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(userId: "user-123")
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Firebase App Instance Id Tests
+
+	func testSetFirebaseAppInstanceIdReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(firebaseAppInstanceId: "fb-instance-id")
+
+		XCTAssertTrue(result === builder, "set(firebaseAppInstanceId:) should return the same builder instance for chaining")
+	}
+
+	func testSetFirebaseAppInstanceIdIsForwardedDuringConfigure() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(firebaseAppInstanceId: "firebase-instance-id-1234")
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: ODM Info Tests
+
+	func testSetOdmInfoReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(odmInfo: "odm-payload")
+
+		XCTAssertTrue(result === builder, "set(odmInfo:) should return the same builder instance for chaining")
+	}
+
+	func testSetOdmInfoIsForwardedDuringConfigure() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(odmInfo: "odm-payload")
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Attribution Settings Setter Tests
+
+	func testSetInactivityTimeFrameHoursReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(inactivityTimeFrameHours: 72)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	func testSetReAttributionTimeFrameDaysReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(reAttributionTimeFrameDays: 30)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	func testSetReFetchReAttributionDelaySecondsReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(reFetchReAttributionDelaySeconds: 10)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	func testSetAttributionRetryDelaySecondsReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(attributionRetryDelaySeconds: 240)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Automatic In-App Purchase Tracking Tests
+
+	func testSetAutomaticInAppPurchaseTrackingTrueReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(automaticInAppPurchaseTracking: true)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	func testSetAutomaticInAppPurchaseTrackingFalseReturnsBuilderAndBuilds() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+		let result = builder.set(automaticInAppPurchaseTracking: false)
+		XCTAssertTrue(result === builder)
+
+		sdk = try result.set(manualStart: true).build()
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Platform Type Tests
+
+	func testSetPlatformTypeReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(platformType: .unity)
+
+		XCTAssertTrue(result === builder, "set(platformType:) should return the same builder instance for chaining")
+	}
+
+	func testSetPlatformTypeBuildsSdkSuccessfully() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(platformType: .unity)
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Manual Start Tests
+
+	func testSetManualStartReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(manualStart: true)
+
+		XCTAssertTrue(result === builder, "set(manualStart:) should return the same builder instance for chaining")
+	}
+
+	// MARK: Console Logging Tests
+
+	func testSetIsLoggingEnabledReturnsBuilder() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = builder.set(isLoggingEnabled: true)
+
+		XCTAssertTrue(result === builder, "set(isLoggingEnabled:) should return the same builder instance for chaining")
+	}
+
+	func testSetIsLoggingEnabledTrueBuildsSdkSuccessfully() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(isLoggingEnabled: true)
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	// MARK: Server URL Tests
+
+	func testSetServerUrlReturnsBuilder() throws {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+		let result = try builder.set(serverUrl: "https://justtrack.io")
+
+		XCTAssertTrue(result === builder, "set(serverUrl:) should return the same builder instance for chaining")
+	}
+
+	func testSetServerUrlBuildsSdkSuccessfully() throws {
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
+			.set(serverUrl: "https://justtrack.io")
+			.set(manualStart: true)
+			.build()
+
+		XCTAssertNotNil(sdk)
+	}
+
+	func testSetServerUrlThrowsOnInvalidUrl() {
+		let builder = JustTrackSdkBuilder(apiToken: Self.apiToken)
+
+		XCTAssertThrowsError(try builder.set(serverUrl: "")) { error in
+			XCTAssertEqual((error as? URLError)?.code, .badURL)
+		}
+	}
+
+	// MARK: Attribution Settings Defaults
+
+	func testAttributionSettingsHasExpectedDefaults() {
+		let settings = AttributionSettings()
+
+		XCTAssertEqual(settings.inactivityTimeFrameHours, 48)
+		XCTAssertEqual(settings.reAttributionTimeFrameDays, 14)
+		XCTAssertEqual(settings.reFetchReAttributionDelaySeconds, 5)
+		XCTAssertEqual(settings.attributionRetryDelaySeconds, 120)
+	}
 }

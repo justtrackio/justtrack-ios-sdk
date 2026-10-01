@@ -4,25 +4,20 @@ extension AttributionOutput {
 	static func fixture(
 		attributionResponse: CompleteAttributionResponse = AttributionResponseImpl.fixture(),
 		retargetingParameters: RetargetingParameters? = RetargetingParametersImpl.fixture(),
-		testGroup: Int? = 42,
-		claimsTimedOut: Bool = false,
-		sdkConfig: AttributionOutputSdkConfig? = .fixture()
+		claimsTimedOut: Bool = false
 	) -> AttributionOutput {
 		AttributionOutput(
 			completeAttributionResponse: attributionResponse,
 			retargetingParameters: retargetingParameters,
-			testGroup: testGroup,
-			claimsTimedOut: claimsTimedOut,
-			sdkConfig: sdkConfig
+			claimsTimedOut: claimsTimedOut
 		)
 	}
 
 	static let fixtureDict: [String: Any] = [
 		"adsetId": "adsetId",
 		"channelName": "channel_name",
-		"type": "type",
 		"userType": "userType",
-		"version": 3,
+		"version": 4,
 		"sourceBundleId": "sourceBundleId",
 		"networkName": "partner_name",
 		"installId": "b410a130-b2b5-472b-8e46-449f5450a4f3",
@@ -32,14 +27,12 @@ extension AttributionOutput {
 		"channelId": 41,
 		"userId": "a410a130-b2b5-472b-8e46-449f5450a4f3",
 		"createdAt": "1970-01-01T00:00:41Z",
-		"testGroup": 42,
-		"campaignId": 41,
+		"campaignExternalId": "41",
 		"campaignOrganic": true,
 		"campaignType": "campaign_type",
 		"sourcePlacement": "sourcePlacement",
 		"networkId": 42,
 		"sourceId": "sourceId",
-		"sdkConfig": try! JSONEncoder().encode(AttributionOutputSdkConfig.fixture()),
 	]
 }
 
@@ -47,13 +40,13 @@ extension AttributionOutput: @retroactive Equatable {
 	public static func == (lhs: AttributionOutput, rhs: AttributionOutput) -> Bool {
 		lhs.completeAttributionResponse.installId == rhs.completeAttributionResponse.installId
 			&& lhs.attributionResponse.userType == rhs.attributionResponse.userType && lhs.attributionResponse.isRedownload == rhs.attributionResponse.isRedownload
-			&& lhs.attributionResponse.campaign == rhs.attributionResponse.campaign && lhs.attributionResponse.type == rhs.attributionResponse.type
+			&& lhs.attributionResponse.campaign == rhs.attributionResponse.campaign
 			&& lhs.attributionResponse.channel == rhs.attributionResponse.channel && lhs.attributionResponse.partner == rhs.attributionResponse.partner
 			&& lhs.attributionResponse.sourceId == rhs.attributionResponse.sourceId && lhs.attributionResponse.sourceBundleId == rhs.attributionResponse.sourceBundleId
 			&& lhs.attributionResponse.sourcePlacement == rhs.attributionResponse.sourcePlacement && lhs.attributionResponse.adsetId == rhs.attributionResponse.adsetId
 			&& lhs.attributionResponse.createdAt == rhs.attributionResponse.createdAt && lhs.retargetingParameters?.wasAlreadyInstalled == rhs.retargetingParameters?.wasAlreadyInstalled
 			&& lhs.retargetingParameters?.url == rhs.retargetingParameters?.url && lhs.retargetingParameters?.parameters == rhs.retargetingParameters?.parameters
-			&& lhs.testGroup == rhs.testGroup && lhs.claimsTimedOut == rhs.claimsTimedOut && lhs.sdkConfig == rhs.sdkConfig
+			&& lhs.claimsTimedOut == rhs.claimsTimedOut
 	}
 }
 
@@ -82,12 +75,11 @@ extension AttributionResponseImpl {
 		userType: String = "userType",
 		redownload: Bool = true,
 		campaign: Campaign = Campaign(
-			id: 41,
+			id: "41",
 			name: "campaign_name",
 			type: "campaign_type",
 			organic: true
 		),
-		type: String = "type",
 		channel: Channel = Channel(
 			id: 41,
 			name: "channel_name",
@@ -109,7 +101,6 @@ extension AttributionResponseImpl {
 			userType: userType,
 			redownload: redownload,
 			campaign: campaign,
-			type: type,
 			channel: channel,
 			partner: partner,
 			sourceId: sourceId,

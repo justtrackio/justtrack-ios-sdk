@@ -56,6 +56,11 @@ force_cast:
 
 force_unwrapping:
   severity: error
+  # SwiftLint >= 0.63 exempts force unwraps of literal-argument calls such as
+  # `URL(string: "...")!` by default. We want them reported (and explicitly
+  # silenced per site), so opt out of every built-in exemption.
+  # Note: the empty list only fully replaces the defaults on SwiftLint >= 0.64.
+  ignored_literal_argument_functions: []
 
 opt_in_rules:
   - missing_docs

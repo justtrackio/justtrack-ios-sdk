@@ -5,13 +5,13 @@ import XCTest
 
 final class EventStoreTests: XCTestCase {
 	private let dimensions1: [String: String] = [
-		Dimension.jtAdNetwork.stringValue: "adNetwork"
+		Dimension.jtAdNetwork.rawValue: "adNetwork"
 	]
 	private let dimensions2: [String: String] = [:]
 	private let dimensions3: [String: String] = [
 		"custom_1": "custom1",
 		"custom_3": "custom3",
-		Dimension.jtAdNetwork.stringValue: "adNetwork",
+		Dimension.jtAdNetwork.rawValue: "adNetwork",
 	]
 
 	func testCanParseStoredEvent() {
@@ -118,6 +118,27 @@ final class EventStoreTests: XCTestCase {
 		XCTAssertEqual(stored3?.sdkVersion.minor, v3.minor)
 		XCTAssertEqual(stored3?.sdkVersion.patch, v3.patch)
 		XCTAssertEqual(stored3?.sdkVersion.name, v3.name)
+	}
+
+	func testEventStoreResetsOnVersionMismatch() {
+		JustTrack.resetForTesting(clearStorage: true)
+
+		// Write a stale dictionary with wrong version number
+		let staleEvent = PublishableUserEvent(name: "stale", sessionId: "s", dimensions: [:], value: 1, unit: nil, currency: nil, happenedAt: nil)
+		var storedData: [String: Any] = [
+			"version": 999,  // wrong version
+			"event-1": StorableEvent(id: 1, event: staleEvent, sequenceNumber: 1).encode(),
+		]
+		UserDefaults.standard.setValue(storedData, forKey: EventStore.key)
+
+		// init should detect version mismatch, reset storage and not load old events
+		let store = EventStore()
+		XCTAssertNil(store.readStoredEvent(), "Version mismatch should discard stale events")
+
+		// The stored dictionary must now contain an empty dict (the reset)
+		let afterReset = UserDefaults.standard.dictionary(forKey: EventStore.key)
+		XCTAssertNotNil(afterReset)
+		XCTAssertNil(afterReset?["event-1"], "Stale event should have been removed during reset")
 	}
 
 	func testDoNotReturnEventsWithoutSdkVersion() {

@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'JustTrackSDK'
-  s.version          = '7.1.0'
+  s.version          = '8.0.0'
   s.summary          = 'justtrack is AppLike Group\'s next level attribution & UA automation platform - built by app publishers for app publishers.'
 
   s.description      = <<-DESC
@@ -18,7 +18,7 @@ The justtrack SDK provides you the ability to track attributions and user behavi
 
   if ENV["JUSTTRACK_DISTRIBUTION_MODE"] == "source" then
     s.source_files        = 'JustTrackSDK/**/*.{c,h,m,swift}'
-    s.public_header_files = 'JustTrackSDK/JustTrackSDK.h', 'JustTrackSDK/Utils/JTInAppPurchaseTracker.h', 'JustTrackSDK/Utils/SignalHandlerComparator/SignalHandlerComparator.h'
+    s.public_header_files = 'JustTrackSDK/JustTrackSDK.h', 'JustTrackSDK/Utils/SignalHandlerComparator/SignalHandlerComparator.h'
   else
     s.source_files        = 'JustTrackSDK.xcframework/**/Headers/*.{c,h,m}'
     s.public_header_files = 'JustTrackSDK.xcframework/**/Headers/*.h'

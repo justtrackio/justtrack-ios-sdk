@@ -3,12 +3,12 @@ import Foundation
 /// Configuration settings for remote config.
 public struct JusttrackRemoteConfigSettings {
 	/// The default minimum interval between fetches in seconds.
-	/// Default value is 86400 (24 hours).
-	public static let defaultMinFetchIntervalInSec: TimeInterval = 24 * 60 * 60
+	/// Default value is 3600 (1 hour).
+	public static let defaultMinFetchIntervalInSec: TimeInterval = 60 * 60
 
 	/// The minimum interval between fetches in seconds.
 	/// If fetch is called before this interval has elapsed, cached values will be returned.
-	/// Default is 86400 (24 hours).
+	/// Default is 3600 (1 hour).
 	public var minFetchIntervalInSec: TimeInterval
 
 	/// Creates a new configuration with the specified settings.

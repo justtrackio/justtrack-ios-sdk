@@ -119,6 +119,8 @@ struct AttributionErrorClassifier: ErrorClassifier {
 	}
 }
 
+typealias LogErrorClassifier = AttributionErrorClassifier
+
 struct PaymentLimitErrorClassifier: ErrorClassifier {
 	func classify(error: NetworkError) -> ErrorClassification? {
 		switch error {
@@ -192,412 +194,53 @@ struct UserData: Equatable {
 	let installId: StringID
 }
 
-struct AssignmentsResponse {
-	let data: Data
-	let retryAfterSeconds: Int?
-}
-
-struct GetAssignmentsParameters {
-	let sdkVersion: any Version
-	let appVersion: AppVersion
-	let osVersion: String
-	let deviceType: DeviceType
-	let deviceModel: String
-	let countryIso2: String?
-	let deviceTimestamp: Int
-	let attributionTimestamp: Int?
-	let firstSdkInitTimestamp: Int?
-	let installTimestamp: Int?
-}
-
 protocol HttpClient {
-	func sendAnonymizeRequest(request: DTOAnonymizeRequest, userData: UserData) -> Future<Data>
-	func sendAttributionRequest(request: DTOAttributionRequest, userData: UserData) -> Future<Data>
-	func sendUserEvents(events: DTOUserEvent, userData: UserData) -> Future<Data>
-	func sendCustomUserId(request: DTOPublishCustomUserIdRequest, userData: UserData) -> Future<Data>
-	func sendFirebaseAppInstanceId(request: DTOPublishFirebaseAppInstanceIdRequest, userData: UserData) -> Future<Data>
-	func sendLogs(input: DTOLogInput, userData: UserData) -> Future<Data>
-	func getSignedIpClaim(ipProtocol: IPProtocol, userData: UserData) -> Future<Data>
-	func sendSetExperimentVariant(request: DTOSetExperimentVariantRequest, userData: UserData) -> Future<Data>
-	func setRules(eventConfig: AttributionOutputSdkConfig.Event)
-	func getAssignments(parameters: GetAssignmentsParameters, userData: UserData) -> Future<AssignmentsResponse>
-	func postEnrollments(request: DTOPostEnrollmentRequest, userData: UserData) -> Future<Data>
+	func execute(
+		requestName: String,
+		urlString: String,
+		headers: [String: String],
+		body: Data?,
+		retries: Int,
+		classifier: ErrorClassifier
+	) -> Future<Data>
+
+	func execute<T>(
+		requestName: String,
+		urlString: String,
+		headers: [String: String],
+		body: Data?,
+		retries: Int,
+		classifier: ErrorClassifier,
+		transform: @escaping (Data, HTTPURLResponse) -> T
+	) -> Future<T>
+
+	func execute(
+		requestName: String,
+		urlString: String,
+		headers: [String: String],
+		body: Data,
+		retryDelaySeconds: [TimeInterval],
+		classifier: ErrorClassifier
+	) -> Future<Data>
 }
 
 final class HttpClientImpl: HttpClient {
-	private typealias Headers = [String: String]
-	static let getAttributionRequestName = "GetAttribution"
-	static let sendUserEventsRequestName = "SendUserEvents"
-	static let sendCustomUserIdRequestName = "SendCustomUserId"
-	static let sendFirebaseAppInstanceIdRequestName = "SendFirebaseAppInstanceId"
-	static let sendLogsRequestName = "SendLogs"
-	static let signIpv4RequestName = "SignIPv4"
-	static let signIpv6RequestName = "SignIPv6"
-	static let sendAnonymizeRequestName = "SendAnonymize"
-	static let sendSetExperimentVariantRequestName = "SendSetExperimentVariant"
-	static let getAssignmentsRequestName = "GetAssignments"
-	static let postEnrollmentsRequestName = "PostEnrollments"
 	private static let requestFailuresMetric = Metric(metric: "RequestFailures")
 
-	private let environment: Environment
-	private let platformType: PlatformType
-	private let appName: String?
-	private let appVersion: String
-	private let apiToken: String
-	private let retryConfig: RetryConfig
-	private let logger: Logger
+	let retryConfig: RetryConfig
+	let logger: Logger
 	private let urlSession: UrlSession
-	private let clientId: String
 	private let isConsoleLoggingEnabled: Bool
-	private var eventConfig: AttributionOutputSdkConfig.Event?
 
 	init(
-		environment: Environment = Environment(),
-		platformType: PlatformType,
-		appName: String? = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String,
-		appVersion: String = readAppVersion().name,
-		apiToken: String,
 		retryConfig: RetryConfig,
 		urlSession: UrlSession,
-		clientId: String = Bundle.main.bundleIdentifier ?? "",
 		isConsoleLoggingEnabled: Bool = true
 	) {
-		self.environment = environment
-		self.platformType = platformType
-		self.appName = appName
-		self.appVersion = appVersion
-		self.apiToken = apiToken
 		self.retryConfig = retryConfig
-		self.logger = isConsoleLoggingEnabled ? LoggerImpl() : IdleLogger()  // just log to console, we don't want to publish logs about HTTP requests with an HTTP request
+		self.logger = isConsoleLoggingEnabled ? LoggerImpl() : IdleLogger()
 		self.urlSession = urlSession
-		self.clientId = clientId
 		self.isConsoleLoggingEnabled = isConsoleLoggingEnabled
-	}
-
-	func sendAnonymizeRequest(request: DTOAnonymizeRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeadersV2(userData: userData)
-			let url = environment.getUrl(route: .privacy, idfaProvided: userData.providesIdfa)
-			return executeAsyncRequestWithRetry(
-				retries: 3,
-				logger: logger,
-				requestName: HttpClientImpl.sendAnonymizeRequestName,
-				classifier: AttributionErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func sendAttributionRequest(request: DTOAttributionRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeadersV2(userData: userData)
-			let url = environment.getUrl(route: .attribution, idfaProvided: userData.providesIdfa)
-			return executeAsyncRequestWithRetry(
-				retries: retryConfig.attributionRequestRetries,
-				logger: self.logger,
-				requestName: HttpClientImpl.getAttributionRequestName,
-				classifier: AttributionErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func sendUserEvents(events: DTOUserEvent, userData: UserData) -> Future<Data> {
-		do {
-			let filteredEvents = filterEventsIfNeeded(events.events)
-
-			if filteredEvents.isEmpty {
-				return FutureImpl<Data>().resolve(Data())
-			}
-
-			let appEvent = DTOUserEvent(
-				appVersion: events.appVersion,
-				sdkVersion: events.sdkVersion,
-				user: events.user,
-				device: events.device,
-				events: filteredEvents
-			)
-
-			let headers = getHeadersV2(userData: userData)
-			let url = environment.getUrl(route: .trackEvent, idfaProvided: userData.providesIdfa)
-			let f = executeAsyncRequestWithRetry(
-				retries: retryConfig.publishEventsRetries,
-				logger: self.logger,
-				requestName: HttpClientImpl.sendUserEventsRequestName,
-				classifier: TrackingEventErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try appEvent.json()
-			)
-			f.observe { result in
-				switch result {
-				case let .failure(error):
-					for event in events.events {
-						self.logger.error(
-							"Event failed to publish",
-							LoggerFieldsImpl()
-								.with("id", event.id)
-								.with("event", event.name)
-								.with("error", error)
-						)
-					}
-				case .success:
-					break
-				}
-			}
-			return f
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	private func filterEventsIfNeeded(_ events: [DTOUserEventEvent]) -> [DTOUserEventEvent] {
-		guard let eventConfig else { return events }
-
-		return events.filter { event in
-			let drop = eventConfig.rules.match(name: event.name, dimensions: event.dimensions).drop
-
-			if drop {
-				logger.debug("Dropping event", LoggerFieldsImpl().with("id", event.id).with("event", event.name))
-			}
-
-			return !drop
-		}
-	}
-
-	func sendCustomUserId(request: DTOPublishCustomUserIdRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeaders(userData: userData)
-			let url = environment.getUrl(route: .publishCustomUserId, idfaProvided: userData.providesIdfa)
-			return executeAsyncRequestWithRetry(
-				retryDelaySeconds: [10, 20, 30],
-				logger: self.logger,
-				requestName: HttpClientImpl.sendCustomUserIdRequestName,
-				classifier: AttributionErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func sendFirebaseAppInstanceId(request: DTOPublishFirebaseAppInstanceIdRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeaders(userData: userData)
-			let url = environment.getUrl(route: .publishFirebaseAppInstanceId, idfaProvided: userData.providesIdfa)
-			return executeAsyncRequestWithRetry(
-				retryDelaySeconds: [10, 20, 30],
-				logger: self.logger,
-				requestName: HttpClientImpl.sendFirebaseAppInstanceIdRequestName,
-				classifier: AttributionErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func sendLogs(input: DTOLogInput, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeaders(userData: userData)
-			let url = environment.getUrl(route: .log, idfaProvided: userData.providesIdfa)
-			return executeAsyncRequestWithRetry(
-				retries: 3,
-				logger: self.logger,
-				requestName: HttpClientImpl.sendLogsRequestName,
-				classifier: AttributionErrorClassifier(),
-				urlString: url,
-				headers: headers,
-				body: try input.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func getSignedIpClaim(ipProtocol: IPProtocol, userData: UserData) -> Future<Data> {
-		let headers = getHeaders(userData: userData)
-		let url = environment.getUrl(route: ipProtocol.route, idfaProvided: userData.providesIdfa)
-		return executeAsyncRequestWithRetry(
-			retries: retryConfig.fetchClaimRetries,
-			logger: self.logger,
-			requestName: ipProtocol.requestName,
-			classifier: FetchClaimErrorClassifier(),
-			urlString: url,
-			headers: headers,
-			body: nil
-		)
-	}
-
-	func sendSetExperimentVariant(request: DTOSetExperimentVariantRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeadersV2(userData: userData)
-			let url = environment.getUrl(route: .testAssignment, idfaProvided: userData.providesIdfa)
-			let classifier = CompositeErrorClassifier(
-				classifiers: [
-					PaymentLimitErrorClassifier(),
-					AttributionErrorClassifier(),
-				]
-			)
-			return executeAsyncRequestWithRetry(
-				retries: 3,
-				logger: self.logger,
-				requestName: HttpClientImpl.sendSetExperimentVariantRequestName,
-				classifier: classifier,
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	func setRules(eventConfig: AttributionOutputSdkConfig.Event) {
-		self.eventConfig = eventConfig
-	}
-
-	func getAssignments(parameters: GetAssignmentsParameters, userData: UserData) -> Future<AssignmentsResponse> {
-		let headers = getHeadersV2(userData: userData)
-		let baseUrl = environment.getUrl(route: .assignments, idfaProvided: userData.providesIdfa)
-
-		guard var components = URLComponents(string: baseUrl) else {
-			return FutureImpl<AssignmentsResponse>().reject(JustTrackErrorWrapper(NetworkError.badUrl(baseUrl)))
-		}
-
-		var queryItems = [
-			URLQueryItem(name: "installInstanceId", value: userData.installId.value),
-			URLQueryItem(name: "deviceTimestamp", value: String(parameters.deviceTimestamp)),
-			URLQueryItem(name: "osVersion", value: parameters.osVersion),
-			URLQueryItem(name: "deviceType", value: parameters.deviceType.stringValue),
-			URLQueryItem(name: "deviceModel", value: parameters.deviceModel),
-			URLQueryItem(name: "appVersionCode", value: parameters.appVersion.code),
-			URLQueryItem(name: "appVersionName", value: parameters.appVersion.name),
-			URLQueryItem(name: "sdkVersionMajor", value: String(parameters.sdkVersion.major)),
-			URLQueryItem(name: "sdkVersionMinor", value: String(parameters.sdkVersion.minor)),
-			URLQueryItem(name: "sdkVersionPatch", value: String(parameters.sdkVersion.patch)),
-			URLQueryItem(name: "sdkVersionName", value: parameters.sdkVersion.name),
-			URLQueryItem(name: "sdkVersionPlatform", value: "ios"),
-		]
-
-		if let countryIso2 = parameters.countryIso2 {
-			queryItems += [
-				URLQueryItem(name: "countryIso2", value: countryIso2)
-			]
-		}
-
-		if let attributionTimestamp = parameters.attributionTimestamp {
-			queryItems += [
-				URLQueryItem(name: "attributionTimestamp", value: String(attributionTimestamp))
-			]
-		}
-
-		if let firstSdkInitTimestamp = parameters.firstSdkInitTimestamp {
-			queryItems += [
-				URLQueryItem(name: "firstSdkInitTimestamp", value: String(firstSdkInitTimestamp))
-			]
-		}
-
-		if let installTimestamp = parameters.installTimestamp {
-			queryItems += [
-				URLQueryItem(name: "installTimestamp", value: String(installTimestamp))
-			]
-		}
-
-		components.queryItems = queryItems
-
-		guard let urlString = components.string else {
-			return FutureImpl<AssignmentsResponse>().reject(JustTrackErrorWrapper(NetworkError.badUrl(baseUrl)))
-		}
-
-		let classifier = CompositeErrorClassifier(
-			classifiers: [
-				PaymentLimitErrorClassifier(),
-				AttributionErrorClassifier(),
-			]
-		)
-
-		return executeAsyncRequestWithRetry(
-			retries: 3,
-			logger: self.logger,
-			requestName: HttpClientImpl.getAssignmentsRequestName,
-			classifier: classifier,
-			urlString: urlString,
-			headers: headers,
-			body: nil
-		) { data, httpResponse in
-			var retryAfterSeconds: Int?
-			if let retryAfterValue = httpResponse.allHeaderFields["Retry-After"] as? String {
-				retryAfterSeconds = Int(retryAfterValue)
-			}
-			return AssignmentsResponse(data: data, retryAfterSeconds: retryAfterSeconds)
-		}
-	}
-
-	func postEnrollments(request: DTOPostEnrollmentRequest, userData: UserData) -> Future<Data> {
-		do {
-			let headers = getHeadersV2(userData: userData)
-			let url = environment.getUrl(route: .assignments, idfaProvided: userData.providesIdfa)
-			let classifier = CompositeErrorClassifier(
-				classifiers: [
-					PaymentLimitErrorClassifier(),
-					AttributionErrorClassifier(),
-				]
-			)
-			return executeAsyncRequestWithRetry(
-				retries: 3,
-				logger: self.logger,
-				requestName: HttpClientImpl.postEnrollmentsRequestName,
-				classifier: classifier,
-				urlString: url,
-				headers: headers,
-				body: try request.json()
-			)
-		} catch {
-			return FutureImpl<Data>().reject(error)
-		}
-	}
-
-	private func getHeaders(userData: UserData) -> Headers {
-		var headers = Headers()
-		headers["X-CLIENT-ID"] = clientId
-		headers["X-CLIENT-TOKEN"] = apiToken
-		headers["X-ADVERTISER-ID"] = userData.idfa?.value ?? "missing"
-		headers["X-USER-ID"] = userData.userId.value
-		headers["X-INSTALL-ID"] = userData.installId.value
-
-		// no need to set accept-encoding as the client we are using is already supporting that
-		headers["Content-Type"] = "application/json; charset=utf-8"
-		headers["User-Agent"] = HttpClientImpl.getUserAgent(platformType: platformType, appName: appName, appVersion: appVersion)
-
-		return headers
-	}
-
-	private func getHeadersV2(userData: UserData) -> Headers {
-		var headers = Headers()
-		headers["X-APP-BUNDLE-ID"] = clientId
-		headers["X-APP-TOKEN"] = apiToken
-		headers["X-ADVERTISER-ID"] = userData.idfa?.value ?? "missing"
-		headers["X-USER-ID"] = userData.userId.value
-		headers["X-INSTALL-ID"] = userData.installId.value
-
-		// no need to set accept-encoding as the client we are using is already supporting that
-		headers["Content-Type"] = "application/json; charset=utf-8"
-		headers["User-Agent"] = HttpClientImpl.getUserAgent(platformType: platformType, appName: appName, appVersion: appVersion)
-
-		return headers
 	}
 
 	static func getUserAgent(
@@ -615,7 +258,7 @@ final class HttpClientImpl: HttpClient {
 		let locale = getCurrentLocale()
 		let appAndPlatform: String = {
 			guard let appName else { return "" }
-			return " \(appName)/\(appVersion) (\(platformType))"
+			return " \(escapeUserAgentField(appName))/\(escapeUserAgentField(appVersion)) (\(platformType))"
 		}()
 		let cfNetworkVersion = HttpClientImpl.getCfNetworkVersion() ?? "unknown"
 		let darwinVersion = DeviceInfo.getDarwinVersion()
@@ -623,6 +266,30 @@ final class HttpClientImpl: HttpClient {
 		// be careful with the format - the backend parses this to extract some information
 		return
 			"JustTrackSDK/\(sdkVersion) (\(product); \(device); \(cpu) CPU; \(os) \(osVersion); \(locale); Build/\(buildName))\(appAndPlatform) CFNetwork/\(cfNetworkVersion) Darwin/\(darwinVersion)"
+	}
+
+	/// The set of characters left unescaped, chosen to match Android's `Uri.encode(value, " ")` byte
+	/// for byte: alphanumerics plus `_-!.~'()*` from its fixed unreserved set, plus the space.
+	///
+	/// The set is built explicitly from ASCII characters rather than from something like
+	/// `CharacterSet.alphanumerics`, which is unicode-aware and would treat CJK characters as
+	/// alphanumeric and leave them unescaped.
+	private static let userAgentFieldAllowedCharacters = CharacterSet(
+		charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-!.~'()* "
+	)
+
+	/// Percent-escapes a single user agent field so the resulting header stays valid and parseable.
+	///
+	/// Escapes everything outside ``userAgentFieldAllowedCharacters``, which covers the cases that
+	/// matter: bytes outside US-ASCII (header values must be ASCII), `%` so a single decode round trip
+	/// is unambiguous, `;` which would add an extra attribute to the device block, and `/` which would
+	/// split an app name into name and version.
+	///
+	/// The space is allowed through, so values that are already plain ASCII stay byte for byte
+	/// identical and the header remains readable. Parentheses are also allowed through, matching
+	/// Android; the backend handles parentheses inside a field.
+	private static func escapeUserAgentField(_ value: String) -> String {
+		return value.addingPercentEncoding(withAllowedCharacters: userAgentFieldAllowedCharacters) ?? value
 	}
 
 	private static func getCfNetworkVersion() -> String? {
@@ -635,14 +302,15 @@ final class HttpClientImpl: HttpClient {
 		return version
 	}
 
-	private func executeAsyncRequestWithRetry(
-		retries: Int,
-		logger: Logger,
+	// MARK: - HttpClient Protocol
+
+	func execute(
 		requestName: String,
-		classifier: ErrorClassifier,
 		urlString: String,
-		headers: Headers,
-		body: Data?
+		headers: [String: String],
+		body: Data?,
+		retries: Int,
+		classifier: ErrorClassifier
 	) -> Future<Data> {
 		return RetryingFuture(
 			retries: retries,
@@ -657,14 +325,13 @@ final class HttpClientImpl: HttpClient {
 		).toFuture()
 	}
 
-	private func executeAsyncRequestWithRetry<T>(
-		retries: Int,
-		logger: Logger,
+	func execute<T>(
 		requestName: String,
-		classifier: ErrorClassifier,
 		urlString: String,
-		headers: Headers,
+		headers: [String: String],
 		body: Data?,
+		retries: Int,
+		classifier: ErrorClassifier,
 		transform: @escaping (Data, HTTPURLResponse) -> T
 	) -> Future<T> {
 		return RetryingFuture(
@@ -680,14 +347,13 @@ final class HttpClientImpl: HttpClient {
 		).toFuture()
 	}
 
-	private func executeAsyncRequestWithRetry(
-		retryDelaySeconds: [TimeInterval],
-		logger: Logger,
+	func execute(
 		requestName: String,
-		classifier: ErrorClassifier,
 		urlString: String,
-		headers: Headers,
-		body: Data
+		headers: [String: String],
+		body: Data,
+		retryDelaySeconds: [TimeInterval],
+		classifier: ErrorClassifier
 	) -> Future<Data> {
 		return RetryingFuture(
 			retryDelaySeconds: retryDelaySeconds,
@@ -702,14 +368,14 @@ final class HttpClientImpl: HttpClient {
 		).toFuture()
 	}
 
-	private func executeAsyncRequest(requestName: String, urlString: String, headers: Headers, body: Data?) -> Future<Data> {
+	private func executeAsyncRequest(requestName: String, urlString: String, headers: [String: String], body: Data?) -> Future<Data> {
 		return executeAsyncRequest(requestName: requestName, urlString: urlString, headers: headers, body: body) { data, _ in data }
 	}
 
 	private func executeAsyncRequest<T>(
 		requestName: String,
 		urlString: String,
-		headers: Headers,
+		headers: [String: String],
 		body: Data?,
 		transform: @escaping (Data, HTTPURLResponse) -> T
 	) -> Future<T> {
@@ -746,7 +412,7 @@ final class HttpClientImpl: HttpClient {
 			#endif
 			result = result.fulfillWith({
 				if let error {
-					self.logger.error("HTTP request failed with network error", LoggerFieldsImpl().with("url", urlString).with("error", error))
+					self.logger.warn("HTTP request failed with network error", LoggerFieldsImpl().with("url", urlString).with("error", error))
 					let dimensions = LoggerFieldsImpl()
 						.with("Request", requestName)
 						.with("Network", connectionType.stringValue)
@@ -757,7 +423,7 @@ final class HttpClientImpl: HttpClient {
 				}
 
 				guard let httpResponse = response as? HTTPURLResponse else {
-					self.logger.error("HTTP request failed with bad response type", LoggerFieldsImpl().with("url", urlString))
+					self.logger.warn("HTTP request failed with bad response type", LoggerFieldsImpl().with("url", urlString))
 					let dimensions = LoggerFieldsImpl()
 						.with("Request", requestName)
 						.with("Network", connectionType.stringValue)
@@ -772,7 +438,7 @@ final class HttpClientImpl: HttpClient {
 					if let data {
 						responseBody = String(data: data, encoding: .utf8)
 					}
-					self.logger.error(
+					self.logger.warn(
 						"HTTP request failed with bad status code",
 						LoggerFieldsImpl()
 							.with("url", urlString)
@@ -793,7 +459,7 @@ final class HttpClientImpl: HttpClient {
 				}
 
 				guard let data = data else {
-					self.logger.error("HTTP request failed with missing response data", LoggerFieldsImpl().with("url", urlString))
+					self.logger.warn("HTTP request failed with missing response data", LoggerFieldsImpl().with("url", urlString))
 					let dimensions = LoggerFieldsImpl()
 						.with("Request", requestName)
 						.with("Network", connectionType.stringValue)
@@ -835,7 +501,7 @@ final class HttpClientImpl: HttpClient {
 			}
 
 			log += "\n────────────────────────────────────────"
-			print(log)
+			logger.debug(log)
 		}
 
 		private func log(response: URLResponse?, data: Data?, error: Error?) {
@@ -866,7 +532,7 @@ final class HttpClientImpl: HttpClient {
 			}
 
 			log += "\n────────────────────────────────────────"
-			print(log)
+			logger.debug(log)
 		}
 
 		private func prettyPrintJSON(_ data: Data) -> String {

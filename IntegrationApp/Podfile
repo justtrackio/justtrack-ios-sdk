@@ -4,20 +4,18 @@ ENV['JUSTTRACK_DISTRIBUTION_MODE'] = 'source'
 
 target 'IntegrationApp' do
   pod 'AppLovinSDK'
-  pod 'IronSourceSDK', '8.11.0'
+  pod 'IronSourceSDK', '9.2.0'
   pod 'Firebase/Analytics'
   pod 'Firebase/Core'
   pod 'UnityAds'
-  pod 'FBSDKCoreKit'
   pod 'GoogleAdsOnDeviceConversion'
-
+  pod 'IronSourceAdQualitySDK'
   pod 'JustTrackSDK', :path => '../JustTrackSDK'
 
   pod 'JustTrackSDKFirebaseAdapter', :path => '../Adapters/Firebase'
   pod 'JustTrackSDKIronSourceAdapter', :path => '../Adapters/IronSource'
   pod 'JustTrackSDKAppLovinAdapter', :path => '../Adapters/AppLovin'
   pod 'JustTrackSDKUnityAdsAdapter', :path => '../Adapters/UnityAds'
-  pod 'JustTrackSDKFacebookAdapter', :path => '../Adapters/Facebook'
   pod 'JustTrackSDKGoogleOdmAdapter', :path => '../Adapters/GoogleOdm'
 
   use_frameworks!

@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init;
 
-- (void)fetchOdmInfoOnSuccess:(void (^)(NSString *odmInfo))onSuccess
+- (void)fetchOdmInfoOnSuccess:(void (^)(NSString * _Nullable odmInfo))onSuccess
 					onFailure:(void (^)(NSError *error))onFailure;
 
 @end

@@ -7,10 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init;
 
-- (void)integrateCustomUserId:(NSString * _Nullable)customUserId
-          impressionDataBlock:(JusttrackISImpressionDataBlock)impressionDataBlock
-					onSuccess:(void (^)(void))onSuccess
-					onFailure:(void (^)(NSError *error))onFailure;
+- (void)integrateImpressionDataBlock:(JusttrackISImpressionDataBlock)impressionDataBlock
+						   onSuccess:(void (^)(void))onSuccess
+						   onFailure:(void (^)(NSError *error))onFailure;
 
 @end
 

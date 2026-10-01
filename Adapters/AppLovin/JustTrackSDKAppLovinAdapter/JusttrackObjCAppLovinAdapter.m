@@ -1,93 +1,144 @@
 #import "JusttrackObjCAppLovinAdapter.h"
 #import "JusttrackALImpressionData.h"
-#import "JTAppLovinDelegates.h"
-#import "JTALReferenceRetainer.h"
 #import <objc/message.h>
 #import <objc/runtime.h>
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
-void loadAppLovinBannerAd(MAAdView* ad, SEL sel);
-void removeFromSuperviewForAppLovinBanner(UIView* view, SEL sel);
-void showAppLovinInterstitialAd(MAInterstitialAd* ad, SEL sel);
-void showAppLovinInterstitialAdForPlacement(MAInterstitialAd* ad, SEL sel, NSString* __nullable placement);
-void showAppLovinInterstitialAdForPlacementWithCustomData(MAInterstitialAd* ad, SEL sel, NSString* __nullable placement, NSString* __nullable customData);
-void showAppLovinRewardedAd(MARewardedAd* ad, SEL sel);
-void showAppLovinRewardedAdForPlacement(MARewardedAd* ad, SEL sel, NSString* __nullable placement);
-void showAppLovinRewardedAdForPlacementWithCustomData(MARewardedAd* ad, SEL sel, NSString* __nullable placement, NSString* __nullable customData);
-void showAppLovinRewardedInterstitialAd(MARewardedInterstitialAd* ad, SEL sel);
-void showAppLovinRewardedInterstitialAdForPlacement(MARewardedInterstitialAd* ad, SEL sel, NSString* __nullable placement);
-void showAppLovinRewardedInterstitialAdForPlacementWithCustomData(MARewardedInterstitialAd* ad, SEL sel, NSString* __nullable placement, NSString* __nullable customData);
-void showAppLovinOpenAd(MAAppOpenAd* ad, SEL sel);
-void showAppLovinOpenAdForPlacement(MAAppOpenAd* ad, SEL sel, NSString * __nullable placement);
-void showAppLovinOpenAdForPlacementWithCustomData(MAAppOpenAd* ad, SEL sel, NSString * __nullable placement, NSString * __nullable customData);
-void loadAppLovinNativeAd(MANativeAdLoader* loader, SEL sel);
-void loadAppLovinNativeAdIntoView(MANativeAdLoader* loader, SEL sel, MANativeAdView* __nullable view);
+/// Topic that the MAX SDK broadcasts impression-level revenue events on, for MMPs.
+/// See: https://support.applovin.com/en/max/ios/overview/impression-level-user-revenue-api-for-mmps
+static NSString *const kJTMaxRevenueEventsTopic = @"max_revenue_events";
 
-@class MAAd;
-@class MAAdView;
-@class MAInterstitialAd;
-@class MARewardedAd;
-@class MARewardedInterstitialAd;
-@class MAAppOpenAd;
-@class MANativeAdLoader;
-@class MANativeAdView;
-@class MAAdFormat;
+#pragma mark - Ad format mapping
 
-typedef void (*LoadBannerAdCallback)(MAAdView*, SEL);
-typedef void (*RemoveFromSuperviewCallback)(UIView*, SEL);
+/// Maps AppLovin's `ad_format` values to the encoded ad-unit names justtrack reports. The output
+/// strings match the canonical `AdUnit.encodedName` values (shared with the Android adapter, which
+/// reads the same MAX broadcast); unknown formats return nil so the event is dropped rather than
+/// reported as garbage.
+static NSString *_Nullable jtMapAdFormat(id adFormat) {
+	if (![adFormat isKindOfClass:[NSString class]]) {
+		return nil;
+	}
+	NSString *format = [(NSString *)adFormat uppercaseString];
+	if ([format isEqualToString:@"APP_OPEN"] || [format isEqualToString:@"APPOPEN"]) { return @"app_open"; }
+	if ([format isEqualToString:@"BANNER"]) { return @"banner"; }
+	if ([format isEqualToString:@"MREC"]) { return @"mrec"; }
+	if ([format isEqualToString:@"INTER"]) { return @"interstitial"; }
+	if ([format isEqualToString:@"REWARDED"]) { return @"rewarded"; }
+	if ([format isEqualToString:@"REWARDED_INTER"]) { return @"rewarded_interstitial"; }
+	if ([format isEqualToString:@"NATIVE"]) { return @"native"; }
+	if ([format isEqualToString:@"LEADER"]) { return @"leader"; }
+	return nil;
+}
 
-typedef void (*ShowInterstitialAdCallback)(MAInterstitialAd*, SEL);
-typedef void (*ShowInterstitialAdForPlacementCallback)(MAInterstitialAd*, SEL, NSString* __nullable);
-typedef void (*ShowInterstitialAdForPlacementWithCustomDataCallback)(MAInterstitialAd*, SEL, NSString* __nullable, NSString* __nullable);
+static NSString *_Nullable jtStringOrNil(id value) {
+	return [value isKindOfClass:[NSString class]] ? (NSString *)value : nil;
+}
 
-typedef void (*ShowRewardedAdCallback)(MARewardedAd*, SEL);
-typedef void (*ShowRewardedAdForPlacementCallback)(MARewardedAd*, SEL, NSString* __nullable);
-typedef void (*ShowRewardedAdForPlacementWithCustomDataCallback)(MARewardedAd*, SEL, NSString* __nullable, NSString* __nullable);
+#pragma mark - Revenue subscriber
 
-typedef void (*ShowRewardedInterstitialAdCallback)(MARewardedInterstitialAd*, SEL);
-typedef void (*ShowRewardedInterstitialAdForPlacementCallback)(MARewardedInterstitialAd*, SEL, NSString* __nullable);
-typedef void (*ShowRewardedInterstitialAdForPlacementWithCustomDataCallback)(MARewardedInterstitialAd*, SEL, NSString* __nullable, NSString* __nullable);
-
-typedef void (*ShowAppOpenAdCallback)(MAAppOpenAd*, SEL);
-typedef void (*ShowAppOpenAdForPlacementCallback)(MAAppOpenAd*, SEL, NSString* __nullable);
-typedef void (*ShowAppOpenAdForPlacementWithCustomDataCallback)(MAAppOpenAd*, SEL, NSString* __nullable, NSString* __nullable);
-
-typedef void (*LoadNativeAdCallback)(MANativeAdLoader*, SEL);
-typedef void (*LoadNativeAdIntoViewCallback)(MANativeAdLoader*, SEL, MANativeAdView * __nullable);
-
-bool listenForRevenue = false;
-JusttrackALImpressionDataBlock _Nullable impressionDataBlock = nil;
-
-LoadBannerAdCallback __nullable loadBannerAdCallback = NULL;
-RemoveFromSuperviewCallback __nullable removeFromSuperviewCallback = NULL;
-
-ShowInterstitialAdCallback __nullable showInterstitialAdCallback = NULL;
-ShowInterstitialAdForPlacementCallback __nullable showInterstitialAdForPlacementCallback = NULL;
-ShowInterstitialAdForPlacementWithCustomDataCallback __nullable showInterstitialAdForPlacementWithCustomDataCallback = NULL;
-
-ShowRewardedAdCallback __nullable showRewardedAdCallback = NULL;
-ShowRewardedAdForPlacementCallback __nullable showRewardedAdForPlacementCallback = NULL;
-ShowRewardedAdForPlacementWithCustomDataCallback __nullable showRewardedAdForPlacementWithCustomDataCallback = NULL;
-
-ShowRewardedInterstitialAdCallback __nullable showRewardedInterstitialAdCallback = NULL;
-ShowRewardedInterstitialAdForPlacementCallback __nullable showRewardedInterstitialAdForPlacementCallback = NULL;
-ShowRewardedInterstitialAdForPlacementWithCustomDataCallback __nullable showRewardedInterstitialAdForPlacementWithCustomDataCallback = NULL;
-
-ShowAppOpenAdCallback __nullable showAppOpenAdCallback = NULL;
-ShowAppOpenAdForPlacementCallback __nullable showAppOpenAdForPlacementCallback = NULL;
-ShowAppOpenAdForPlacementWithCustomDataCallback __nullable showAppOpenAdForPlacementWithCustomDataCallback = NULL;
-
-LoadNativeAdCallback __nullable loadNativeAdCallback = NULL;
-LoadNativeAdIntoViewCallback __nullable loadNativeAdIntoViewCallback = NULL;
-
-@interface JusttrackObjCAppLovinAdapter()
+/// Subscribes to the MAX `max_revenue_events` topic (AppLovin's official impression-level revenue
+/// API for MMPs) and forwards each impression to justtrack. This replaces the previous approach of
+/// swizzling AppLovin load/show methods and wrapping ad delegates, which competed for the ad's
+/// `delegate` slot and collided with other delegate-wrapping SDKs (e.g. IronSource Ad Quality),
+/// producing forwarding cycles. The communicator is a separate pub/sub channel, so there is no
+/// delegate to contend for.
+///
+/// `didReceiveMessage:` and `communicatorIdentifier` are the `ALCSubscriber` protocol methods.
+/// The protocol/message types are not available at compile time (the adapter is built against the
+/// AppLovin SDK via the Objective-C runtime, not headers), so the message is typed as `id` and read
+/// with KVC, and protocol conformance is added at runtime with `class_addProtocol`.
+@interface JTAppLovinRevenueSubscriber : NSObject
+@property (nonatomic, copy, nullable) JusttrackALImpressionDataBlock impressionDataBlock;
 @end
+
+@implementation JTAppLovinRevenueSubscriber
+
+- (void)didReceiveMessage:(id)message {
+	JusttrackALImpressionDataBlock block = self.impressionDataBlock;
+	if (message == nil || block == nil) {
+		return;
+	}
+
+	NSString *topic = nil;
+	id data = nil;
+	@try {
+		topic = [message valueForKey:@"topic"];
+		data = [message valueForKey:@"data"];
+	} @catch (NSException *exception) {
+		return;
+	}
+
+	if (![topic isKindOfClass:[NSString class]] || ![topic isEqualToString:kJTMaxRevenueEventsTopic]) {
+		return;
+	}
+	if (![data isKindOfClass:[NSDictionary class]]) {
+		return;
+	}
+
+	NSDictionary *payload = (NSDictionary *)data;
+
+	id revenueValue = payload[@"revenue"];
+	double revenue = [revenueValue respondsToSelector:@selector(doubleValue)] ? [revenueValue doubleValue] : 0.0;
+	// A negative revenue (e.g. -1) signals an invalid/errored event from the MAX SDK. Match the
+	// Android adapter and drop it rather than reporting a bogus impression.
+	if (revenue < 0.0) {
+		return;
+	}
+
+	NSString *format = jtMapAdFormat(payload[@"ad_format"]);
+	if (format == nil) {
+		// Unknown ad format — drop, consistent with the Android adapter.
+		return;
+	}
+
+	// Placement resolution mirrors the Android adapter: prefer `network_placement`; otherwise use
+	// `third_party_ad_placement_id`; otherwise fall back to any other key containing "placement".
+	NSString *placement = nil;
+	BOOL hasNetworkPlacement = payload[@"network_placement"] != nil;
+	if (hasNetworkPlacement) {
+		placement = jtStringOrNil(payload[@"network_placement"]);
+	} else {
+		placement = jtStringOrNil(payload[@"third_party_ad_placement_id"]);
+		for (id key in payload) {
+			if (![key isKindOfClass:[NSString class]]) { continue; }
+			NSString *keyString = (NSString *)key;
+			if ([keyString isEqualToString:@"third_party_ad_placement_id"]) { continue; }
+			if ([keyString rangeOfString:@"placement"].location == NSNotFound) { continue; }
+			id value = payload[keyString];
+			if ([value isKindOfClass:[NSString class]]) {
+				placement = (NSString *)value;
+			}
+		}
+	}
+
+	JusttrackALImpressionData *impressionData = [[JusttrackALImpressionData alloc] init];
+	impressionData.format = format;
+	impressionData.network = jtStringOrNil(payload[@"network_name"]);
+	impressionData.placement = placement;
+	impressionData.segmentName = jtStringOrNil(payload[@"user_segment"]);
+	impressionData.instanceName = jtStringOrNil(payload[@"max_ad_unit_id"]);
+	impressionData.revenue = @(revenue);
+
+	block(impressionData);
+}
+
+- (NSString *)communicatorIdentifier {
+	return @"justtrack";
+}
+
+@end
+
+#pragma mark - Adapter
+
+/// Held strongly for the lifetime of the process: the MAX communicator keeps only a weak reference
+/// to its subscribers, so we must retain ours ourselves.
+static JTAppLovinRevenueSubscriber *jtRevenueSubscriber = nil;
 
 @implementation JusttrackObjCAppLovinAdapter
 
 - (instancetype)init {
 	self = [super init];
-	
+
 	return self;
 }
 
@@ -95,140 +146,26 @@ LoadNativeAdIntoViewCallback __nullable loadNativeAdIntoViewCallback = NULL;
 		  impressionDataBlock:(JusttrackALImpressionDataBlock)impressionDataBlockParam
 					onSuccess:(void (^)(void))onSuccess
 					onFailure:(void (^)(NSError *error))onFailure {
-	impressionDataBlock = [impressionDataBlockParam copy];
-	Class MAAdView = objc_lookUpClass("MAAdView") ?: objc_lookUpClass("AppLovinSDK.MAAdView");
-	if (MAAdView == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1101
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MAAdView class"}];
-		onFailure(error);
-		return;
-	}
-
-	Class MAInterstitialAd = objc_lookUpClass("MAInterstitialAd") ?: objc_lookUpClass("AppLovinSDK.MAInterstitialAd");
-	if (MAInterstitialAd == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1102
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MAInterstitialAd class"}];
-		onFailure(error);
-		return;
-	}
-
-	Class MARewardedAd = objc_lookUpClass("MARewardedAd") ?: objc_lookUpClass("AppLovinSDK.MARewardedAd");
-	if (MARewardedAd == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1103
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MARewardedAd class"}];
-		onFailure(error);
-		return;
-	}
-
-	Class MARewardedInterstitialAd = objc_lookUpClass("MARewardedInterstitialAd") ?: objc_lookUpClass("AppLovinSDK.MARewardedInterstitialAd");
-
-	Class MANativeAdLoader = objc_lookUpClass("MANativeAdLoader") ?: objc_lookUpClass("AppLovinSDK.MANativeAdLoader");
-	if (MANativeAdLoader == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1104
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MANativeAdLoader class"}];
-		onFailure(error);
-		return;
-	}
-
-	Class MANativeAdView = objc_lookUpClass("MANativeAdView") ?: objc_lookUpClass("AppLovinSDK.MANativeAdView");
-	if (MANativeAdView == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1105
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MANativeAdView class"}];
-		onFailure(error);
-		return;
-	}
-
-	Class MAAppOpenAd = objc_lookUpClass("MAAppOpenAd") ?: objc_lookUpClass("AppLovinSDK.MAAppOpenAd");
-	if (MAAppOpenAd == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1106
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MAAppOpenAd class"}];
-		onFailure(error);
-		return;
-	}
 
 	Class ALSdk = objc_lookUpClass("ALSdk") ?: objc_lookUpClass("AppLovinSDK.ALSdk");
 	if (ALSdk == NULL) {
 		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1107
+											 code:1101
 										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find ALSdk class"}];
 		onFailure(error);
 		return;
 	}
 
+	NSString *version = nil;
 	Method getValueForKeyMethod = class_getClassMethod(ALSdk, @selector(valueForKey:));
-	if (getValueForKeyMethod == NULL) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1108
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find ALSdk valueForKey:"}];
-		onFailure(error);
-		return;
+	if (getValueForKeyMethod != NULL) {
+		typedef id (*GetValueForKey)(Class, SEL, NSString*);
+		GetValueForKey getValueForKey = (GetValueForKey) method_getImplementation(getValueForKeyMethod);
+		version = getValueForKey(ALSdk, @selector(valueForKey:), @"version");
 	}
 
-	typedef id (*GetValueForKey)(Class, SEL, NSString*);
-	GetValueForKey getValueForKey = (GetValueForKey) method_getImplementation(getValueForKeyMethod);
-
-	NSString *version = getValueForKey(ALSdk, @selector(valueForKey:), @"version");
-
-	static dispatch_once_t bannerSwizzleToken;
-	static BOOL bannerSwizzleSuccess = YES;
-	dispatch_once(&bannerSwizzleToken, ^{
-		Method loadAdMethod = class_getInstanceMethod(MAAdView, NSSelectorFromString(@"loadAd"));
-		if (loadAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(loadAdMethod);
-			loadBannerAdCallback = (LoadBannerAdCallback) oldIMP;
-			method_setImplementation(loadAdMethod, (IMP) loadAppLovinBannerAd);
-		} else {
-			bannerSwizzleSuccess = NO;
-		}
-	});
-	if (!bannerSwizzleSuccess) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1109
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find MAAdView loadAd"}];
-		onFailure(error);
-		return;
-	}
-
-	static dispatch_once_t removeFromSuperviewSwizzleToken;
-	static BOOL removeFromSuperviewSwizzleSuccess = YES;
-	dispatch_once(&removeFromSuperviewSwizzleToken, ^{
-		Method removeFromSuperviewMethod = class_getInstanceMethod(UIView.class, @selector(removeFromSuperview));
-		if (removeFromSuperviewMethod != NULL) {
-			IMP oldIMP = method_getImplementation(removeFromSuperviewMethod);
-			removeFromSuperviewCallback = (RemoveFromSuperviewCallback) oldIMP;
-			method_setImplementation(removeFromSuperviewMethod, (IMP) removeFromSuperviewForAppLovinBanner);
-		} else {
-			removeFromSuperviewSwizzleSuccess = NO;
-		}
-	});
-	if (!removeFromSuperviewSwizzleSuccess) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:1110
-										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find UIView removeFromSuperview"}];
-		onFailure(error);
-		return;
-	}
-
-	[self setupInterstitialSwizzling:MAInterstitialAd onFailure:onFailure];
-
-	[self setupRewardedSwizzling:MARewardedAd onFailure:onFailure];
-
-	if (MARewardedInterstitialAd != NULL) {
-		[self setupRewardedInterstitialSwizzling:MARewardedInterstitialAd onFailure:onFailure];
-	}
-
-	[self setupNativeAdSwizzling:MANativeAdLoader onFailure:onFailure];
-
-	[self setupAppOpenAdSwizzling:MAAppOpenAd onFailure:onFailure];
-
+	// Set the custom user id (best effort, unchanged from the previous implementation).
 	bool userIdHandled = false;
-
 	if (customUserId != NULL) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
@@ -255,257 +192,64 @@ LoadNativeAdIntoViewCallback __nullable loadNativeAdIntoViewCallback = NULL;
 		userIdHandled = true;
 	}
 
-	if (userIdHandled) {
-		NSLog(@"[JusttrackSDK] Successfully integrated AppLovin adapter version: %@", version);
-		onSuccess();
-	} else {
+	if (!userIdHandled) {
 		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
 											 code:1111
 										 userInfo:@{NSLocalizedDescriptionKey: @"Could not set userId:"}];
 		onFailure(error);
+		return;
 	}
-}
 
-- (void)setupInterstitialSwizzling:(Class)MAInterstitialAd onFailure:(void (^)(NSError *error))onFailure {
-	static dispatch_once_t interstitialSwizzleToken;
-	static BOOL interstitialSwizzleSuccess = YES;
-	static int interstitialSwizzleErrorCode = 0;
-	static NSString *interstitialSwizzleErrorMessage = nil;
-	dispatch_once(&interstitialSwizzleToken, ^{
-		Method showAdMethod = class_getInstanceMethod(MAInterstitialAd, NSSelectorFromString(@"showAd"));
-		Method showAdForPlacementMethod = class_getInstanceMethod(MAInterstitialAd, NSSelectorFromString(@"showAdForPlacement:"));
-		Method showAdForPlacementWithCustomDataMethod = class_getInstanceMethod(MAInterstitialAd, NSSelectorFromString(@"showAdForPlacement:customData:"));
-
-		if (showAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdMethod);
-			showInterstitialAdCallback = (ShowInterstitialAdCallback) oldIMP;
-			method_setImplementation(showAdMethod, (IMP) showAppLovinInterstitialAd);
-		} else {
-			interstitialSwizzleSuccess = NO;
-			interstitialSwizzleErrorCode = 2101;
-			interstitialSwizzleErrorMessage = @"Could not find MAInterstitialAd showAd";
-			return;
-		}
-
-		if (showAdForPlacementMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementMethod);
-			showInterstitialAdForPlacementCallback = (ShowInterstitialAdForPlacementCallback) oldIMP;
-			method_setImplementation(showAdForPlacementMethod, (IMP) showAppLovinInterstitialAdForPlacement);
-		} else {
-			interstitialSwizzleSuccess = NO;
-			interstitialSwizzleErrorCode = 2102;
-			interstitialSwizzleErrorMessage = @"Could not find MAInterstitialAd showAdForPlacement:";
-			return;
-		}
-
-		if (showAdForPlacementWithCustomDataMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementWithCustomDataMethod);
-			showInterstitialAdForPlacementWithCustomDataCallback = (ShowInterstitialAdForPlacementWithCustomDataCallback) oldIMP;
-			method_setImplementation(showAdForPlacementWithCustomDataMethod, (IMP) showAppLovinInterstitialAdForPlacementWithCustomData);
-		} else {
-			interstitialSwizzleSuccess = NO;
-			interstitialSwizzleErrorCode = 2103;
-			interstitialSwizzleErrorMessage = @"Could not find MAInterstitialAd showAdForPlacement:customData:";
-			return;
-		}
-	});
-	if (!interstitialSwizzleSuccess) {
+	// Subscribe to the MAX impression-level revenue events (official MMP API).
+	Class ALCCommunicator = objc_lookUpClass("ALCCommunicator") ?: objc_lookUpClass("AppLovinSDK.ALCCommunicator");
+	if (ALCCommunicator == NULL) {
 		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:interstitialSwizzleErrorCode
-										 userInfo:@{NSLocalizedDescriptionKey: interstitialSwizzleErrorMessage}];
+											 code:1112
+										 userInfo:@{NSLocalizedDescriptionKey: @"Could not find ALCCommunicator; the AppLovin SDK is too old for the MMP revenue API"}];
 		onFailure(error);
+		return;
 	}
-}
 
-- (void)setupRewardedSwizzling:(Class)MARewardedAd onFailure:(void (^)(NSError *error))onFailure {
-	static dispatch_once_t rewardedSwizzleToken;
-	static BOOL rewardedSwizzleSuccess = YES;
-	static int rewardedSwizzleErrorCode = 0;
-	static NSString *rewardedSwizzleErrorMessage = nil;
-	dispatch_once(&rewardedSwizzleToken, ^{
-		Method showAdMethod = class_getInstanceMethod(MARewardedAd, NSSelectorFromString(@"showAd"));
-		Method showAdForPlacementMethod = class_getInstanceMethod(MARewardedAd, NSSelectorFromString(@"showAdForPlacement:"));
-		Method showAdForPlacementWithCustomDataMethod = class_getInstanceMethod(MARewardedAd, NSSelectorFromString(@"showAdForPlacement:customData:"));
-
-		if (showAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdMethod);
-			showRewardedAdCallback = (ShowRewardedAdCallback) oldIMP;
-			method_setImplementation(showAdMethod, (IMP) showAppLovinRewardedAd);
-		} else {
-			rewardedSwizzleSuccess = NO;
-			rewardedSwizzleErrorCode = 3101;
-			rewardedSwizzleErrorMessage = @"Could not find MARewardedAd showAd";
-			return;
-		}
-
-		if (showAdForPlacementMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementMethod);
-			showRewardedAdForPlacementCallback = (ShowRewardedAdForPlacementCallback) oldIMP;
-			method_setImplementation(showAdForPlacementMethod, (IMP) showAppLovinRewardedAdForPlacement);
-		} else {
-			rewardedSwizzleSuccess = NO;
-			rewardedSwizzleErrorCode = 3102;
-			rewardedSwizzleErrorMessage = @"Could not find MARewardedAd showAdForPlacement:";
-			return;
-		}
-
-		if (showAdForPlacementWithCustomDataMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementWithCustomDataMethod);
-			showRewardedAdForPlacementWithCustomDataCallback = (ShowRewardedAdForPlacementWithCustomDataCallback) oldIMP;
-			method_setImplementation(showAdForPlacementWithCustomDataMethod, (IMP) showAppLovinRewardedAdForPlacementWithCustomData);
-		} else {
-			rewardedSwizzleSuccess = NO;
-			rewardedSwizzleErrorCode = 3103;
-			rewardedSwizzleErrorMessage = @"Could not find MARewardedAd showAdForPlacement:customData:";
-			return;
-		}
-	});
-	if (!rewardedSwizzleSuccess) {
+	SEL defaultCommunicatorSelector = NSSelectorFromString(@"defaultCommunicator");
+	if (![ALCCommunicator respondsToSelector:defaultCommunicatorSelector]) {
 		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:rewardedSwizzleErrorCode
-										 userInfo:@{NSLocalizedDescriptionKey: rewardedSwizzleErrorMessage}];
+											 code:1113
+										 userInfo:@{NSLocalizedDescriptionKey: @"ALCCommunicator does not respond to defaultCommunicator"}];
 		onFailure(error);
+		return;
 	}
-}
 
-- (void)setupRewardedInterstitialSwizzling:(Class)MARewardedInterstitialAd onFailure:(void (^)(NSError *error))onFailure {
-	static dispatch_once_t rewardedInterstitialSwizzleToken;
-	static BOOL rewardedInterstitialSwizzleSuccess = YES;
-	static int rewardedInterstitialSwizzleErrorCode = 0;
-	static NSString *rewardedInterstitialSwizzleErrorMessage = nil;
-	dispatch_once(&rewardedInterstitialSwizzleToken, ^{
-		Method showAdMethod = class_getInstanceMethod(MARewardedInterstitialAd, NSSelectorFromString(@"showAd"));
-		Method showAdForPlacementMethod = class_getInstanceMethod(MARewardedInterstitialAd, NSSelectorFromString(@"showAdForPlacement:"));
-		Method showAdForPlacementWithCustomDataMethod = class_getInstanceMethod(MARewardedInterstitialAd, NSSelectorFromString(@"showAdForPlacement:customData:"));
-
-		if (showAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdMethod);
-			showRewardedInterstitialAdCallback = (ShowRewardedInterstitialAdCallback) oldIMP;
-			method_setImplementation(showAdMethod, (IMP) showAppLovinRewardedInterstitialAd);
-		} else {
-			rewardedInterstitialSwizzleSuccess = NO;
-			rewardedInterstitialSwizzleErrorCode = 4101;
-			rewardedInterstitialSwizzleErrorMessage = @"Could not find MARewardedInterstitialAd showAd";
-			return;
-		}
-
-		if (showAdForPlacementMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementMethod);
-			showRewardedInterstitialAdForPlacementCallback = (ShowRewardedInterstitialAdForPlacementCallback) oldIMP;
-			method_setImplementation(showAdForPlacementMethod, (IMP) showAppLovinRewardedInterstitialAdForPlacement);
-		} else {
-			rewardedInterstitialSwizzleSuccess = NO;
-			rewardedInterstitialSwizzleErrorCode = 4102;
-			rewardedInterstitialSwizzleErrorMessage = @"Could not find MARewardedInterstitialAd showAdForPlacement:";
-			return;
-		}
-
-		if (showAdForPlacementWithCustomDataMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementWithCustomDataMethod);
-			showRewardedInterstitialAdForPlacementWithCustomDataCallback = (ShowRewardedInterstitialAdForPlacementWithCustomDataCallback) oldIMP;
-			method_setImplementation(showAdForPlacementWithCustomDataMethod, (IMP) showAppLovinRewardedInterstitialAdForPlacementWithCustomData);
-		} else {
-			rewardedInterstitialSwizzleSuccess = NO;
-			rewardedInterstitialSwizzleErrorCode = 4103;
-			rewardedInterstitialSwizzleErrorMessage = @"Could not find MARewardedInterstitialAd showAdForPlacement:customData:";
-			return;
-		}
-	});
-	if (!rewardedInterstitialSwizzleSuccess) {
+	id communicator = ((id (*)(id, SEL))objc_msgSend)(ALCCommunicator, defaultCommunicatorSelector);
+	SEL subscribeSelector = NSSelectorFromString(@"subscribe:forTopic:");
+	if (communicator == nil || ![communicator respondsToSelector:subscribeSelector]) {
 		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:rewardedInterstitialSwizzleErrorCode
-										 userInfo:@{NSLocalizedDescriptionKey: rewardedInterstitialSwizzleErrorMessage}];
+											 code:1114
+										 userInfo:@{NSLocalizedDescriptionKey: @"ALCCommunicator does not support subscribe:forTopic:"}];
 		onFailure(error);
+		return;
 	}
-}
 
-- (void)setupNativeAdSwizzling:(Class)MANativeAdLoader onFailure:(void (^)(NSError *error))onFailure {
-	static dispatch_once_t nativeAdSwizzleToken;
-	static BOOL nativeAdSwizzleSuccess = YES;
-	static int nativeAdSwizzleErrorCode = 0;
-	static NSString *nativeAdSwizzleErrorMessage = nil;
-	dispatch_once(&nativeAdSwizzleToken, ^{
-		Method loadNativeAdMethod = class_getInstanceMethod(MANativeAdLoader, NSSelectorFromString(@"loadAd"));
-		if (loadNativeAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(loadNativeAdMethod);
-			loadNativeAdCallback = (LoadNativeAdCallback) oldIMP;
-			method_setImplementation(loadNativeAdMethod, (IMP) loadAppLovinNativeAd);
-		} else {
-			nativeAdSwizzleSuccess = NO;
-			nativeAdSwizzleErrorCode = 5101;
-			nativeAdSwizzleErrorMessage = @"Could not find MANativeAdLoader loadAd";
-			return;
-		}
+	if (jtRevenueSubscriber == nil) {
+		// `subscribe:forTopic:` may verify conformsToProtocol:@protocol(ALCSubscriber); add it at runtime.
+		static dispatch_once_t protocolOnceToken;
+		dispatch_once(&protocolOnceToken, ^{
+			Protocol *subscriberProtocol = objc_getProtocol("ALCSubscriber");
+			if (subscriberProtocol != NULL) {
+				class_addProtocol([JTAppLovinRevenueSubscriber class], subscriberProtocol);
+			}
+		});
 
-		Method loadNativeAdIntoViewMethod = class_getInstanceMethod(MANativeAdLoader, NSSelectorFromString(@"loadAdIntoAdView:"));
-		if (loadNativeAdIntoViewMethod != NULL) {
-			IMP oldIMP = method_getImplementation(loadNativeAdIntoViewMethod);
-			loadNativeAdIntoViewCallback = (LoadNativeAdIntoViewCallback) oldIMP;
-			method_setImplementation(loadNativeAdIntoViewMethod, (IMP) loadAppLovinNativeAdIntoView);
-		} else {
-			nativeAdSwizzleSuccess = NO;
-			nativeAdSwizzleErrorCode = 5102;
-			nativeAdSwizzleErrorMessage = @"Could not find MANativeAdLoader loadAdIntoAdView:";
-			return;
-		}
-	});
-	if (!nativeAdSwizzleSuccess) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:nativeAdSwizzleErrorCode
-										 userInfo:@{NSLocalizedDescriptionKey: nativeAdSwizzleErrorMessage}];
-		onFailure(error);
+		jtRevenueSubscriber = [[JTAppLovinRevenueSubscriber alloc] init];
+		jtRevenueSubscriber.impressionDataBlock = [impressionDataBlockParam copy];
+
+		((void (*)(id, SEL, id, NSString *))objc_msgSend)(communicator, subscribeSelector, jtRevenueSubscriber, kJTMaxRevenueEventsTopic);
+	} else {
+		// Already subscribed (idempotent re-integration): just refresh the callback.
+		jtRevenueSubscriber.impressionDataBlock = [impressionDataBlockParam copy];
 	}
-}
 
-- (void)setupAppOpenAdSwizzling:(Class)MAAppOpenAd onFailure:(void (^)(NSError *error))onFailure {
-	static dispatch_once_t appOpenAdSwizzleToken;
-	static BOOL appOpenAdSwizzleSuccess = YES;
-	static int appOpenAdSwizzleErrorCode = 0;
-	static NSString *appOpenAdSwizzleErrorMessage = nil;
-	dispatch_once(&appOpenAdSwizzleToken, ^{
-		Method showAdMethod = class_getInstanceMethod(MAAppOpenAd, NSSelectorFromString(@"showAd"));
-		if (showAdMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdMethod);
-			showAppOpenAdCallback = (ShowAppOpenAdCallback) oldIMP;
-			method_setImplementation(showAdMethod, (IMP) showAppLovinOpenAd);
-		} else {
-			appOpenAdSwizzleSuccess = NO;
-			appOpenAdSwizzleErrorCode = 6101;
-			appOpenAdSwizzleErrorMessage = @"Could not find MAAppOpenAd showAd";
-			return;
-		}
-
-		Method showAdForPlacementMethod = class_getInstanceMethod(MAAppOpenAd, NSSelectorFromString(@"showAdForPlacement:"));
-		if (showAdForPlacementMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementMethod);
-			showAppOpenAdForPlacementCallback = (ShowAppOpenAdForPlacementCallback) oldIMP;
-			method_setImplementation(showAdForPlacementMethod, (IMP) showAppLovinOpenAdForPlacement);
-		} else {
-			appOpenAdSwizzleSuccess = NO;
-			appOpenAdSwizzleErrorCode = 6102;
-			appOpenAdSwizzleErrorMessage = @"Could not find MAAppOpenAd showAdForPlacement:";
-			return;
-		}
-
-		Method showAdForPlacementWithCustomDataMethod = class_getInstanceMethod(MAAppOpenAd, NSSelectorFromString(@"showAdForPlacement:customData:"));
-		if (showAdForPlacementWithCustomDataMethod != NULL) {
-			IMP oldIMP = method_getImplementation(showAdForPlacementWithCustomDataMethod);
-			showAppOpenAdForPlacementWithCustomDataCallback = (ShowAppOpenAdForPlacementWithCustomDataCallback) oldIMP;
-			method_setImplementation(showAdForPlacementWithCustomDataMethod, (IMP) showAppLovinOpenAdForPlacementWithCustomData);
-		} else {
-			appOpenAdSwizzleSuccess = NO;
-			appOpenAdSwizzleErrorCode = 6103;
-			appOpenAdSwizzleErrorMessage = @"Could not find MAAppOpenAd showAdForPlacement:customData:";
-			return;
-		}
-	});
-	if (!appOpenAdSwizzleSuccess) {
-		NSError *error = [NSError errorWithDomain:@"JusttrackAppLovinAdapter"
-											 code:appOpenAdSwizzleErrorCode
-										 userInfo:@{NSLocalizedDescriptionKey: appOpenAdSwizzleErrorMessage}];
-		onFailure(error);
-	}
+	NSLog(@"[JusttrackSDK] Successfully integrated AppLovin adapter version: %@ (MAX revenue events)", version);
+	onSuccess();
 }
 
 @end
-

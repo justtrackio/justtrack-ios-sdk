@@ -4,8 +4,10 @@ import MachO
 import UIKit
 
 func getCurrentCountry() -> String? {
-	let iso = NSLocale.current.regionCode
+	return mapRegionCode(NSLocale.current.regionCode)
+}
 
+internal func mapRegionCode(_ iso: String?) -> String? {
 	switch iso {
 	case "AC":
 		return "GB"

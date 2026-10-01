@@ -6,7 +6,7 @@ import XCTest
 final class HttpLoggerTests: XCTestCase {
 	private lazy var httpLogger = HttpLoggerImpl(
 		fallback: logger,
-		httpClient: httpClient,
+		logApi: logApi,
 		logAggregator: logAggregator,
 		installId: userData.installId,
 		adIdsProvider: { [unowned self] in FutureImpl<AdIds>().fulfill(.success(AdIds(idfa: self.idfa, userId: self.userData.userId))) },
@@ -16,7 +16,7 @@ final class HttpLoggerTests: XCTestCase {
 	)
 
 	private var logger = LoggerImpl()
-	private var httpClient = MockHttpClient()
+	private var logApi = MockLogApi()
 	private lazy var logAggregator: LogAggregator = LogAggregatorImpl(queue: logAggregatorQueue, sqliteDriver: sqliteDriver)
 	private var logAggregatorQueue = DispatchQueue(label: "io.justtrack.JustTrackSDK.LogAggregatorImpl.queue", qos: .userInteractive)
 	private var idfa: StringID?
@@ -50,9 +50,9 @@ final class HttpLoggerTests: XCTestCase {
 		waitForExpectation(#function)
 
 		XCTAssertEqual(
-			httpClient.calls,
+			logApi.calls,
 			[
-				MockHttpClient.Call.sendLogs(
+				MockLogApi.Call.sendLogs(
 					input: DTOLogInput(
 						messages: [
 							DTOLogMessage(
@@ -70,77 +70,6 @@ final class HttpLoggerTests: XCTestCase {
 								[
 									"field_2_1": "value_2_1",
 									"field_2_2": "value_2_2",
-								],
-								date
-							),
-							DTOLogMessage(
-								"info",
-								"message_3",
-								[
-									"field_3_1": "value_3_1",
-									"field_3_2": "value_3_2",
-								],
-								date
-							),
-						],
-						metrics: [],
-						appVersion: .fixture(code: "1", name: "1.1.0"),
-						sdkVersion: .fixture(name: "1.1.1-test"),
-						clientDate: date
-					),
-					userData: userData
-				)
-			]
-		)
-	}
-
-	func testHttpLoggerSendsInfoLogsToServerWithFilteringWhenLogConfigWithRulesIsSet() {
-		httpLogger.setRules(
-			logConfig: .fixture(
-				rules: [
-					AttributionOutputSdkConfig.Rule(
-						name: "message_1",
-						drop: false,
-						dimensions: [:]
-					),
-					AttributionOutputSdkConfig.Rule(
-						name: "message_2",
-						drop: true,
-						dimensions: ["field_2_1": "^.*$", "field_2_2": "^val.*$"]
-					),
-				]
-			),
-			metricConfig: nil
-		)
-		httpLogger.info(
-			"message_1",
-			[LoggerFieldsImpl().with("field_1_1", "value_1_1").with("field_1_2", "value_1_2")]
-		)
-		httpLogger.info(
-			"message_2",
-			[LoggerFieldsImpl().with("field_2_1", "value_2_1").with("field_2_2", "value_2_2")]
-		)
-		httpLogger.info(
-			"message_3",
-			[LoggerFieldsImpl().with("field_3_1", "value_3_1").with("field_3_2", "value_3_2")]
-		)
-
-		httpLogger.sendToServer()
-
-		waitForExpectation(#function)
-
-		XCTAssertEqual(
-			httpClient.calls,
-			[
-				MockHttpClient.Call.sendLogs(
-					input: DTOLogInput(
-						messages: [
-							DTOLogMessage(
-								"info",
-								"message_1",
-								[
-									"field_1_1": "value_1_1",
-									"field_1_2": "value_1_2",
 								],
 								date
 							),
@@ -184,9 +113,9 @@ final class HttpLoggerTests: XCTestCase {
 		waitForExpectation(#function)
 
 		XCTAssertEqual(
-			httpClient.calls,
+			logApi.calls,
 			[
-				MockHttpClient.Call.sendLogs(
+				MockLogApi.Call.sendLogs(
 					input: DTOLogInput(
 						messages: [
 							DTOLogMessage(
@@ -216,72 +145,6 @@ final class HttpLoggerTests: XCTestCase {
 								],
 								date
 							),
-						],
-						metrics: [
-							.fixture(metric: "Warnings"),
-							.fixture(metric: "Warnings"),
-							.fixture(metric: "Warnings"),
-						],
-						appVersion: .fixture(code: "1", name: "1.1.0"),
-						sdkVersion: .fixture(name: "1.1.1-test"),
-						clientDate: date
-					),
-					userData: userData
-				)
-			]
-		)
-	}
-
-	func testHttpLoggerSendsWarnLogsToServerWithFilteringWhenLogConfigWithRulesIsSet() {
-		httpLogger.setRules(
-			logConfig: .fixture(
-				rules: [
-					AttributionOutputSdkConfig.Rule(
-						name: "message_1",
-						drop: true,
-						dimensions: [:]
-					),
-					AttributionOutputSdkConfig.Rule(
-						name: "message_2",
-						drop: true,
-						dimensions: ["field_2_1": "^.*_1$", "field_2_2": "value_2_2"]
-					),
-				]
-			),
-			metricConfig: nil
-		)
-		httpLogger.warn(
-			"message_1",
-			[LoggerFieldsImpl().with("field_1_1", "value_1_1").with("field_1_2", "value_1_2")]
-		)
-		httpLogger.warn(
-			"message_2",
-			[LoggerFieldsImpl().with("field_2_1", "value_2_1").with("field_2_2", "value_2_2")]
-		)
-		httpLogger.warn(
-			"message_3",
-			[LoggerFieldsImpl().with("field_3_1", "value_3_1").with("field_3_2", "value_3_2")]
-		)
-
-		httpLogger.sendToServer()
-
-		waitForExpectation(#function)
-
-		XCTAssertEqual(
-			httpClient.calls,
-			[
-				MockHttpClient.Call.sendLogs(
-					input: DTOLogInput(
-						messages: [
-							DTOLogMessage(
-								"warn",
-								"message_3",
-								[
-									"field_3_1": "value_3_1",
-									"field_3_2": "value_3_2",
-								],
-								date
-							)
 						],
 						metrics: [
 							.fixture(metric: "Warnings"),
@@ -317,9 +180,9 @@ final class HttpLoggerTests: XCTestCase {
 		waitForExpectation(#function)
 
 		XCTAssertEqual(
-			httpClient.calls,
+			logApi.calls,
 			[
-				MockHttpClient.Call.sendLogs(
+				MockLogApi.Call.sendLogs(
 					input: DTOLogInput(
 						messages: [
 							DTOLogMessage(
@@ -349,72 +212,6 @@ final class HttpLoggerTests: XCTestCase {
 								],
 								date
 							),
-						],
-						metrics: [
-							.fixture(metric: "Errors"),
-							.fixture(metric: "Errors"),
-							.fixture(metric: "Errors"),
-						],
-						appVersion: .fixture(code: "1", name: "1.1.0"),
-						sdkVersion: .fixture(name: "1.1.1-test"),
-						clientDate: date
-					),
-					userData: userData
-				)
-			]
-		)
-	}
-
-	func testHttpLoggerSendsErrorLogsToServerWithFilteringWhenLogConfigWithRulesIsSet() {
-		httpLogger.setRules(
-			logConfig: .fixture(
-				rules: [
-					AttributionOutputSdkConfig.Rule(
-						name: "message_1",
-						drop: true,
-						dimensions: [:]
-					),
-					AttributionOutputSdkConfig.Rule(
-						name: "message_2",
-						drop: true,
-						dimensions: ["field_2_1": "^.*_1$", "field_2_2": "value_2_2"]
-					),
-				]
-			),
-			metricConfig: nil
-		)
-		httpLogger.error(
-			"message_1",
-			[LoggerFieldsImpl().with("field_1_1", "value_1_1").with("field_1_2", "value_1_2")]
-		)
-		httpLogger.error(
-			"message_2",
-			[LoggerFieldsImpl().with("field_2_1", "value_2_1").with("field_2_2", "value_2_2")]
-		)
-		httpLogger.error(
-			"message_3",
-			[LoggerFieldsImpl().with("field_3_1", "value_3_1").with("field_3_2", "value_3_2")]
-		)
-
-		httpLogger.sendToServer()
-
-		waitForExpectation(#function)
-
-		XCTAssertEqual(
-			httpClient.calls,
-			[
-				MockHttpClient.Call.sendLogs(
-					input: DTOLogInput(
-						messages: [
-							DTOLogMessage(
-								"error",
-								"message_3",
-								[
-									"field_3_1": "value_3_1",
-									"field_3_2": "value_3_2",
-								],
-								date
-							)
 						],
 						metrics: [
 							.fixture(metric: "Errors"),
@@ -465,9 +262,9 @@ final class HttpLoggerTests: XCTestCase {
 		waitForExpectation(#function)
 
 		XCTAssertEqual(
-			httpClient.calls,
+			logApi.calls,
 			[
-				MockHttpClient.Call.sendLogs(
+				MockLogApi.Call.sendLogs(
 					input: DTOLogInput(
 						messages: [],
 						metrics: [
@@ -512,88 +309,91 @@ final class HttpLoggerTests: XCTestCase {
 		)
 	}
 
-	func testHttpLoggerSendsMetricsToServerWithFilteringWhenMetricConfigIsSet() {
-		httpLogger.publishMetric(
-			Metric(
-				metric: "metric_1",
-				defaultDimensions: ["dimension_1": "value_1"],
-				unit: .count
-			),
-			12,
-			[LoggerFieldsImpl().with("field_1", "value_1")]
-		)
-		httpLogger.publishMetric(
-			Metric(
-				metric: "metric_2",
-				defaultDimensions: ["dimension_1": "value_1"],
-				unit: .count
-			),
-			12,
-			[LoggerFieldsImpl().with("field_1", "value_1")]
-		)
-		httpLogger.publishMetric(
-			Metric(
-				metric: "metric_3",
-				defaultDimensions: ["dimension_1": "value_1"],
-				unit: .count
-			),
-			12,
-			[LoggerFieldsImpl().with("field_1", "value_1")]
-		)
-		httpLogger.setRules(
-			logConfig: nil,
-			metricConfig: AttributionOutputSdkConfig.Metric(
-				rules: [
-					AttributionOutputSdkConfig.Rule(
-						name: "metric_1",
-						drop: true,
-						dimensions: [:]
-					),
-					AttributionOutputSdkConfig.Rule(
-						name: "metric_2",
-						drop: true,
-						dimensions: ["dimension_1": "^.*_1$"]
-					),
-					AttributionOutputSdkConfig.Rule(
-						name: "metric_3",
-						drop: true,
-						dimensions: ["dimension_1": "^.*_1$", "field_2": "^.*$"]
-					),
-				]
-			)
-		)
+	// MARK: - sdkIsRunning guard branches
 
+	func testHttpLoggerDoesNotLogWhenSdkIsNotRunning() {
+		httpLogger.sdkIsRunning = { false }
+
+		httpLogger.info("should be dropped", [])
+		httpLogger.warn("should be dropped", [])
+		httpLogger.error("should be dropped", [])
+		httpLogger.debug("should be dropped", [])
 		httpLogger.sendToServer()
 
 		waitForExpectation(#function)
 
-		XCTAssertEqual(
-			httpClient.calls,
-			[
-				MockHttpClient.Call.sendLogs(
-					input: DTOLogInput(
-						messages: [],
-						metrics: [
-							DTOLogMetric(
-								"metric_3",
-								[
-									"dimension_1": "value_1",
-									"field_1": "value_1",
-								],
-								12,
-								"Count",
-								date
-							)
-						],
-						appVersion: .fixture(code: "1", name: "1.1.0"),
-						sdkVersion: .fixture(name: "1.1.1-test"),
-						clientDate: date
-					),
-					userData: userData
-				)
-			]
-		)
+		XCTAssertTrue(logApi.calls.isEmpty, "No calls should be made when sdk is not running")
 	}
+
+	func testHttpLoggerDoesNotSendToServerWhenSdkIsNotRunning() {
+		// Put something in the aggregator first while running, then stop, then sendToServer
+		httpLogger.info("message", [])
+		httpLogger.sdkIsRunning = { false }
+		httpLogger.sendToServer()
+
+		// Give time for any async work
+		waitForExpectation(#function)
+
+		// sendToServer was called while not running → logAggregator.sendLogsAndMetrics was not called
+		// (the guard returns early). The previous info message is still in the aggregator unflushed.
+		XCTAssertTrue(logApi.calls.isEmpty)
+	}
+
+	// MARK: - performServerRequest adIds failure
+
+	func testHttpLoggerHandlesAdIdsFailureGracefully() {
+		let failingAdIdsLogger = HttpLoggerImpl(
+			fallback: logger,
+			logApi: logApi,
+			logAggregator: logAggregator,
+			installId: userData.installId,
+			adIdsProvider: {
+				FutureImpl<AdIds>().fulfill(.failure(NSError(domain: "test", code: 42)))
+			},
+			dateProvider: { [unowned self] in self.date },
+			appVersionProvider: { [unowned self] in self.appVersion },
+			sdkVersionProvider: { [unowned self] in self.sdkVersion }
+		)
+
+		failingAdIdsLogger.info("message", [])
+		failingAdIdsLogger.sendToServer()
+
+		waitForExpectation(#function)
+
+		// adIds failed → logApi.sendLogs should never have been called
+		XCTAssertTrue(logApi.calls.isEmpty)
+	}
+
+	// MARK: - default dateProvider closure (arg 6)
+
+	func testHttpLoggerDefaultDateProviderIsUsed() {
+		// Instantiate without specifying dateProvider — exercises the default closure
+		let loggerWithDefaults = HttpLoggerImpl(
+			fallback: logger,
+			logApi: logApi,
+			logAggregator: logAggregator,
+			installId: userData.installId,
+			adIdsProvider: { [unowned self] in
+				FutureImpl<AdIds>().fulfill(.success(AdIds(idfa: self.idfa, userId: self.userData.userId)))
+			}
+		)
+
+		loggerWithDefaults.info("hello from default date provider", [])
+		loggerWithDefaults.sendToServer()
+
+		waitForExpectation(#function)
+
+		XCTAssertEqual(logApi.calls.count, 1)
+		if case let .sendLogs(input, _) = logApi.calls.first {
+			XCTAssertEqual(input.messages.count, 1)
+			// The date string should be non-empty (default provider returned current time)
+			XCTAssertFalse(input.clientDate.isEmpty)
+		} else {
+			XCTFail("Expected sendLogs call")
+		}
+	}
+
+	// MARK: - performServerRequest empty-after-filter early return
 
 	private func waitForExpectation(
 		_ name: String

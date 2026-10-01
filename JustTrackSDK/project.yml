@@ -11,8 +11,8 @@ options:
 settings:
   base:
     BUILD_LIBRARY_FOR_DISTRIBUTION: YES
-    CURRENT_PROJECT_VERSION: 710
-    MARKETING_VERSION: 7.1.0
+    CURRENT_PROJECT_VERSION: 800
+    MARKETING_VERSION: 8.0.0
     VERSIONING_SYSTEM: apple-generic
     CLANG_ANALYZER_SECURITY_FLOATLOOPCOUNTER: YES
     CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND: YES
@@ -45,20 +45,18 @@ targets:
         includes: ["**/*.h"]
         excludes: [
           JustTrackSDK.h,
-          Utils/JTInAppPurchaseTracker.h,
           Utils/SignalHandlerComparator/SignalHandlerComparator.h
         ]
         headerVisibility: project
       - path: JustTrackSDK
         includes: [
           JustTrackSDK.h,
-          Utils/JTInAppPurchaseTracker.h,
           Utils/SignalHandlerComparator/SignalHandlerComparator.h
         ]
         headerVisibility: public
     settings:
       base:
-        CURRENT_PROJECT_VERSION: 710
+        CURRENT_PROJECT_VERSION: 800
         INFO_PLIST_FILE: JustTrackSDK/Info.plist
     resources:
       - PrivacyInfo.xcprivacy
@@ -75,7 +73,10 @@ targets:
     platform: iOS
     deploymentTarget: 12.0
     supportedDestinations: [iOS]
-    sources: [JustTrackSDKTests]
+    sources:
+      - path: JustTrackSDKTests
+      - path: TestApp/TestApp.storekit
+        buildPhase: resources
     dependencies:
       - target: JustTrackSDK
     settings:
@@ -115,6 +116,9 @@ schemes:
     test:
       targets:
         - JustTrackSDKTests
+      gatherCoverageData: true
+      coverageTargets:
+        - JustTrackSDK
   
   TestApp:
     build:

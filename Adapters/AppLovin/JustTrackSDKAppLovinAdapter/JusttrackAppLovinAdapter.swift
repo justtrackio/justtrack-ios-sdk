@@ -4,7 +4,7 @@ import JustTrackSDK
 public final class JusttrackAppLovinAdapter: JusttrackAdapter {
 	static let name = "\(JusttrackAppLovinAdapter.self) v\(JusttrackAppLovinAdapter.version)"
 
-	static let version = "1.0.1"
+	static let version = "1.0.2"
 
 	private let customUserId: String?
 
@@ -24,6 +24,8 @@ public final class JusttrackAppLovinAdapter: JusttrackAdapter {
 			let impression = AdImpression(unit: impressionData.format, sdkName: "appLovin")
 				.set(network: impressionData.network)
 				.set(placement: impressionData.placement)
+				.set(segmentName: impressionData.segmentName)
+				.set(instanceName: impressionData.instanceName)
 				.set(revenue: Money(value: impressionData.revenue.doubleValue, currency: "USD"))
 
 			sdk.forward(adImpression: impression).observe { forwardResult in
@@ -44,7 +46,7 @@ public final class JusttrackAppLovinAdapter: JusttrackAdapter {
 				promise.resolve(())
 			},
 			onFailure: { error in
-				logger.error("[\(JusttrackAppLovinAdapter.name)] Couldn't integrate AppLovin: \(error.localizedDescription)")
+				logger.warn("[\(JusttrackAppLovinAdapter.name)] Couldn't integrate AppLovin: \(error.localizedDescription)")
 				promise.reject(error)
 			}
 		)

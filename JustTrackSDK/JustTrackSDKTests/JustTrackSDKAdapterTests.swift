@@ -21,8 +21,7 @@ final class JustTrackSDKAdapterTests: XCTestCase {
 	}
 
 	func testIntegrateWithAdapterWhenSdkIsRunning() throws {
-		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken)
-			.set(bundleId: Self.clientId)
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
 			.build()
 
 		let expectation = self.expectation(description: "Integration should complete")
@@ -43,8 +42,7 @@ final class JustTrackSDKAdapterTests: XCTestCase {
 	}
 
 	func testIntegrateWithAdapterWhenSdkIsNotRunning() throws {
-		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken)
-			.set(bundleId: Self.clientId)
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
 			.set(manualStart: true)
 			.build()
 
@@ -71,8 +69,7 @@ final class JustTrackSDKAdapterTests: XCTestCase {
 	}
 
 	func testIntegrateWithMultipleAdaptersBeforeSdkStarts() throws {
-		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken)
-			.set(bundleId: Self.clientId)
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
 			.set(manualStart: true)
 			.build()
 
@@ -104,8 +101,7 @@ final class JustTrackSDKAdapterTests: XCTestCase {
 	}
 
 	func testIntegrateWithAdapterThatFails() throws {
-		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken)
-			.set(bundleId: Self.clientId)
+		sdk = try JustTrackSdkBuilder(apiToken: Self.apiToken, clientId: Self.clientId)
 			.build()
 		sdk.start()
 

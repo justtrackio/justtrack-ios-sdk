@@ -19,7 +19,7 @@ You can find the complete documentation at <https://docs.justtrack.io/sdk/overvi
 Add the following line to your `Podfile`:
 
 ```ruby
-pod 'JustTrackSDK', '7.1.0'
+pod 'JustTrackSDK', '8.0.0'
 ```
 
 Then run:
@@ -41,7 +41,7 @@ https://github.com/justtrackio/justtrack-sdk-spm
 Add the following to your `Cartfile`:
 
 ```
-binary "https://sdk.justtrack.io/carthage/JustTrackSDK.json" ~> 7.1.0
+binary "https://sdk.justtrack.io/carthage/JustTrackSDK.json" ~> 8.0.0
 ```
 
 Then run:

@@ -135,6 +135,11 @@ public final class JtResourceEvent: AppEvent {
 public final class JtPurchaseEvent: AppEvent {
 	static let name: String = "jt_purchase"
 
+	public enum Action: String {
+		case view
+		case click
+	}
+
 	public init(jtAction: String, jtProductId: String, jtToken: String? = nil, jtProductType: String, count: Double) {
 		super.init(Self.name)
 		_ = add(dimension: .jtAction, value: jtAction)
@@ -150,6 +155,14 @@ public final class JtPurchaseEvent: AppEvent {
 		_ = add(dimension: .jtProductId, value: jtProductId)
 		_ = add(dimension: .jtToken, value: jtToken)
 		_ = add(dimension: .jtProductType, value: jtProductType)
+	}
+
+	public convenience init(jtAction: Action, jtProductId: String, jtToken: String? = nil, jtProductType: String, count: Double) {
+		self.init(jtAction: jtAction.rawValue, jtProductId: jtProductId, jtToken: jtToken, jtProductType: jtProductType, count: count)
+	}
+
+	public convenience init(jtAction: Action, jtProductId: String, jtToken: String? = nil, jtProductType: String) {
+		self.init(jtAction: jtAction.rawValue, jtProductId: jtProductId, jtToken: jtToken, jtProductType: jtProductType)
 	}
 
 }

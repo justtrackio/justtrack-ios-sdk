@@ -400,9 +400,9 @@ final class LoggerImpl: Logger {
 		}
 
 		if #available(iOS 14.0, *) {
-			LoggerImpl.log.log(level: level, "JustTrackSdk: \(logMessage, privacy: .public)")
+			LoggerImpl.log.log(level: level, "JustTrackSDK: \(logMessage, privacy: .public)")
 		} else {
-			os_log("JustTrackSdk: %s", type: level, logMessage)
+			os_log("JustTrackSDK: %s", type: level, logMessage)
 		}
 	}
 }

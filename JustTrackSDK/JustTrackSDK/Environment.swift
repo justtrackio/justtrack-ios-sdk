@@ -21,13 +21,6 @@ enum IPProtocol {
 		}
 	}
 
-	var requestName: String {
-		switch self {
-		case .ipV4: HttpClientImpl.signIpv4RequestName
-		case .ipV6: HttpClientImpl.signIpv6RequestName
-		}
-	}
-
 	var claimDurationMetric: Metric {
 		switch self {
 		case .ipV4: IPProtocol.ipv4RequestDurationMetric
@@ -119,7 +112,7 @@ struct Environment {
 	}
 }
 
-private func stripScheme(url: String) -> String {
+func stripScheme(url: String) -> String {
 	guard let components = URLComponents(string: url) else {
 		return url
 	}

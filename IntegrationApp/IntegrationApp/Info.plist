@@ -7,7 +7,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>integrationapp</string>
+				<string>fb2043297272911955</string>
 			</array>
 		</dict>
 		<dict>
@@ -27,12 +27,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>FacebookAppID</key>
-	<string></string>
-	<key>FacebookClientToken</key>
-	<string></string>
-	<key>FacebookDisplayName</key>
-	<string>IntegrationApp</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>integrationapp</string>

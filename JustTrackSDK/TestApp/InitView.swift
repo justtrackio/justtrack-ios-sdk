@@ -143,6 +143,7 @@ struct InitView: View {
 				.set(manualStart: isManualStartEnabled)
 				.set(isLoggingEnabled: true)
 				.set(serverUrl: LocalCredentials.sandbox)
+				.set(enableConnectionTracking: true)
 				.build()
 		}
 

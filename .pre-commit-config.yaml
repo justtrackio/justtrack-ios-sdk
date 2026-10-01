@@ -6,11 +6,11 @@ repos:
         entry: ./JustTrackSDK/scripts/swiftlint.sh
         language: script
         pass_filenames: false
-        files: ^ios/.*\.(swift|m|mm|h)$
+        files: \.(swift|m|mm|h)$
 
       - id: swiftformat
         name: "swift formatting check"
         entry: ./JustTrackSDK/scripts/swiftformat.sh
         language: script
         pass_filenames: false
-        files: ^ios/.*\.(swift|m|mm|h)$
+        files: \.(swift|m|mm|h)$

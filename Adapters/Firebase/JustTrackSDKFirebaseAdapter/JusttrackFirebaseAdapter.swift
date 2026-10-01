@@ -16,7 +16,7 @@ public final class JusttrackFirebaseAdapter: JusttrackAdapter {
 		func log(
 			error: Error
 		) {
-			logger.error("[\(JusttrackFirebaseAdapter.name)] Couldn't integrate Firebase: \(error.localizedDescription)")
+			logger.warn("[\(JusttrackFirebaseAdapter.name)] Couldn't integrate Firebase: \(error.localizedDescription)")
 		}
 
 		let promise = FutureImpl<Void>()

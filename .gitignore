@@ -30,10 +30,13 @@ DerivedData
 *.hmap
 *.ipa
 *.xcuserstate
-*.pbxproj
 JustTrackSDK/JustTrackSDK.xcodeproj/xcshareddata/xcschemes/
+JustTrackSDK/JustTrackSDK.xcodeproj/project.pbxproj
 Adapters/**/*.xcscheme
 
 # CocoaPods
 Pods
 *.xcworkspace
+# Codegraph index
+.codegraph/
+.kiro/

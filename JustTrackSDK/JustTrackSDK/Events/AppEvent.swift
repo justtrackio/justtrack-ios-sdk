@@ -111,7 +111,7 @@ public class AppEvent {
 	///   - value: The value for the dimension.
 	/// - Returns: The event itself for method chaining.
 	public func add(dimension: Dimension, value: String) -> AppEvent {
-		return add(dimension: dimension.stringValue, value: value)
+		return add(dimension: dimension.rawValue, value: value)
 	}
 
 	/// Adds a dimension to the event.
@@ -135,7 +135,7 @@ public class AppEvent {
 	/// - Parameter dimension: The dimension to remove.
 	/// - Returns: The event itself for method chaining.
 	public func remove(dimension: Dimension) -> AppEvent {
-		return self.remove(dimension: dimension.stringValue)
+		return self.remove(dimension: dimension.rawValue)
 	}
 
 	/// Removes a dimension from the event.

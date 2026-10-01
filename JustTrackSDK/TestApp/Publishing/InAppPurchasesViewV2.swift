@@ -219,7 +219,14 @@ struct InAppPurchasesViewV2: View {
 		guard let product else { return }
 		Task(priority: .high) {
 			do {
-				let purchaseResult = try await product.purchase()
+				let installId = try await sdk.getInstallInstanceId().async()
+				guard let token = UUID(uuidString: installId) else {
+					print("Failed to create UUID from install instance ID: \(installId)")
+					return
+				}
+				let purchaseResult = try await product.purchase(options: [
+					.appAccountToken(token)
+				])
 				switch purchaseResult {
 				case let .success(transactionResult):
 					switch transactionResult {

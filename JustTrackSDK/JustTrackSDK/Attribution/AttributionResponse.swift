@@ -8,8 +8,6 @@ public protocol AttributionResponse {
 	var isRedownload: Bool { get }
 	/// The campaign associated with this attribution.
 	var campaign: Campaign { get }
-	/// The type of attribution.
-	var type: String { get }
 	/// The channel through which the attribution occurred.
 	var channel: Channel { get }
 	/// The partner associated with this attribution.
@@ -34,7 +32,7 @@ protocol CompleteAttributionResponse: AttributionResponse {
 /// Represents a marketing campaign in the attribution system.
 public struct Campaign {
 	/// The unique identifier of the campaign.
-	public let id: Int
+	public let id: String
 	/// The name of the campaign.
 	public let name: String
 	/// The type of campaign.
@@ -48,7 +46,7 @@ public struct Campaign {
 	///   - name: The name of the campaign.
 	///   - type: The type of campaign.
 	///   - organic: Whether this is an organic campaign.
-	public init(id: Int, name: String, type: String, organic: Bool) {
+	public init(id: String, name: String, type: String, organic: Bool) {
 		self.id = id
 		self.name = name
 		self.type = type
@@ -100,7 +98,6 @@ class AttributionResponseImpl: CompleteAttributionResponse {
 	let userType: String
 	let isRedownload: Bool
 	let campaign: Campaign
-	let type: String
 	let channel: Channel
 	let partner: Partner
 	let sourceId: String?
@@ -115,7 +112,6 @@ class AttributionResponseImpl: CompleteAttributionResponse {
 		userType: String,
 		redownload: Bool,
 		campaign: Campaign,
-		type: String,
 		channel: Channel,
 		partner: Partner,
 		sourceId: String?,
@@ -129,7 +125,6 @@ class AttributionResponseImpl: CompleteAttributionResponse {
 		self.userType = userType
 		self.isRedownload = redownload
 		self.campaign = campaign
-		self.type = type
 		self.channel = channel
 		self.partner = partner
 		self.sourceId = sourceId

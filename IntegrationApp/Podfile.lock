@@ -103,15 +103,12 @@ PODS:
   - IronSourceSDK/AdQuality (9.2.0.0):
     - IronSourceAdQualitySDK (~> 9.1.1)
   - IronSourceSDK/Ads (9.2.0.0)
-  - JustTrackSDK (7.1.0)
+  - JustTrackSDK (7.1.1)
   - JustTrackSDKAppLovinAdapter (1.0.1):
-    - JustTrackSDK
-  - JustTrackSDKFacebookAdapter (1.0.0-rc1):
-    - FBSDKCoreKit
     - JustTrackSDK
   - JustTrackSDKFirebaseAdapter (1.0.0):
     - JustTrackSDK
-  - JustTrackSDKGoogleOdmAdapter (1.0.0-rc1):
+  - JustTrackSDKGoogleOdmAdapter (1.0.1):
     - JustTrackSDK
   - JustTrackSDKIronSourceAdapter (2.0.0):
     - JustTrackSDK
@@ -131,19 +128,17 @@ DEPENDENCIES:
   - Firebase/Analytics
   - Firebase/Core
   - GoogleAdsOnDeviceConversion
+  - IronSourceAdQualitySDK
   - IronSourceSDK (= 9.2.0)
-  - JustTrackSDK (= 7.1.0)
-  - JustTrackSDKAppLovinAdapter
-  - JustTrackSDKFacebookAdapter (= 1.0.0-rc1)
-  - JustTrackSDKFirebaseAdapter
-  - JustTrackSDKGoogleOdmAdapter (= 1.0.0-rc1)
-  - JustTrackSDKIronSourceAdapter (= 2.0.0)
-  - JustTrackSDKUnityAdsAdapter
+  - JustTrackSDK (from `../JustTrackSDK`)
+  - JustTrackSDKAppLovinAdapter (from `../Adapters/AppLovin`)
+  - JustTrackSDKFirebaseAdapter (from `../Adapters/Firebase`)
+  - JustTrackSDKGoogleOdmAdapter (from `../Adapters/GoogleOdm`)
+  - JustTrackSDKIronSourceAdapter (from `../Adapters/IronSource`)
+  - JustTrackSDKUnityAdsAdapter (from `../Adapters/UnityAds`)
   - UnityAds
 
 SPEC REPOS:
-  "git@gitlab.justtrack.io:justtrack/SDK/cocoa-pods-testing.git":
-    - JustTrackSDKIronSourceAdapter
   https://github.com/CocoaPods/Specs.git:
     - AppLovinSDK
     - FBAEMKit
@@ -159,15 +154,23 @@ SPEC REPOS:
     - GoogleUtilities
     - IronSourceAdQualitySDK
     - IronSourceSDK
-    - JustTrackSDK
-    - JustTrackSDKAppLovinAdapter
-    - JustTrackSDKFacebookAdapter
-    - JustTrackSDKFirebaseAdapter
-    - JustTrackSDKGoogleOdmAdapter
-    - JustTrackSDKUnityAdsAdapter
     - nanopb
     - PromisesObjC
     - UnityAds
+
+EXTERNAL SOURCES:
+  JustTrackSDK:
+    :path: "../JustTrackSDK"
+  JustTrackSDKAppLovinAdapter:
+    :path: "../Adapters/AppLovin"
+  JustTrackSDKFirebaseAdapter:
+    :path: "../Adapters/Firebase"
+  JustTrackSDKGoogleOdmAdapter:
+    :path: "../Adapters/GoogleOdm"
+  JustTrackSDKIronSourceAdapter:
+    :path: "../Adapters/IronSource"
+  JustTrackSDKUnityAdsAdapter:
+    :path: "../Adapters/UnityAds"
 
 SPEC CHECKSUMS:
   AppLovinSDK: fb0795377cc861aa8813019ddc5d05fbd998c527
@@ -184,17 +187,16 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   IronSourceAdQualitySDK: 56314ade811a5226f76dfd377bc09aca0d6610c0
   IronSourceSDK: 66e1483cd62fb63162a965651f6f41c6b91664db
-  JustTrackSDK: 782d9306841b6dc5732920d9b535155f552d6661
-  JustTrackSDKAppLovinAdapter: 645173c99d8c952813d5ad0aefdbf69723ecb7cd
-  JustTrackSDKFacebookAdapter: fc4b03bea51283739925b84d030ad4902cb8127b
-  JustTrackSDKFirebaseAdapter: d738c678d881ffb9a06cacdcd3c1ae725a485ff1
-  JustTrackSDKGoogleOdmAdapter: 0c4ffaa9a88259c83b95ea03b3414192674941b1
-  JustTrackSDKIronSourceAdapter: d2e84143d41035c273832f64b9ce638419def62c
-  JustTrackSDKUnityAdsAdapter: aeb4ef5739e98f6ee96273ea20d4a7884324c53d
+  JustTrackSDK: dc09da9b52e267ba44d37ed9066fb97f075cc74e
+  JustTrackSDKAppLovinAdapter: 9fa0a254f2a416205e3043ac9a4f6672c30dab4c
+  JustTrackSDKFirebaseAdapter: 8d87f1e8401a62be0ec6763d27101404ceeea0a3
+  JustTrackSDKGoogleOdmAdapter: b57f5cd731b103d70ef46efc9911e8c854ec0d14
+  JustTrackSDKIronSourceAdapter: b2d379f1e4789c9f2aac32dfd8f3403ca1d0bf48
+  JustTrackSDKUnityAdsAdapter: ad29d2ae2e2fb4af8718d59ceff17c6eddbdd3f2
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   UnityAds: adbe0d522fd14b8298c5e159164fc43396165843
 
-PODFILE CHECKSUM: 12b2808066496df9c398227b257227b43f80df88
+PODFILE CHECKSUM: a5e19dc85340da4f0bb4d66b3fc43eca2de3e950
 
 COCOAPODS: 1.16.2

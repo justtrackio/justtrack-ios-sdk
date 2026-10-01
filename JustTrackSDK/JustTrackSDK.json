@@ -15,5 +15,6 @@
   "7.0.0-rc1": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.0.0-rc1.zip",
   "7.1.0-rc1": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.1.0-rc1.zip",
   "7.1.0-rc2": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.1.0-rc2.zip",
-  "7.1.0": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.1.0.zip"
+  "7.1.0": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.1.0.zip",
+  "7.1.1": "https://sdk.justtrack.io/pods/JustTrackSDK/JustTrackSDK-7.1.1.zip"
 }

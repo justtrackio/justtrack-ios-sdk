@@ -6,15 +6,29 @@ struct Store {
 	static let appVersionAtInstallKey = "io.justtrack.appVersion.atInstall"
 	static let currentAppVersionKey = "io.justtrack.appVersion.current"
 	static let firstSdkInitTimestampKey = "io.justtrack.firstSdkInitTimestamp"
-	static let testGroupIdKey = "io.justtrack.testGroupId"
 	static let postbackConversionValueSetKey = "io.justtrack.postback.conversionValueSetKey"
-	private static let version: Int = 3
-	private static let noTestGroup: Int = -1
+	private static let version: Int = 4
 
 	private let userDefaults: UserDefaults
 
 	init(userDefaults: UserDefaults = .standard) {
 		self.userDefaults = userDefaults
+		migrateStoredAttribution()
+	}
+
+	private func migrateStoredAttribution() {
+		guard let stored = userDefaults.dictionary(forKey: Self.attributionKey) else { return }
+		guard stored["version"] as? Int == 3 else { return }
+
+		var migrated: [String: Any] = ["version": Self.version]
+		if let value = stored["userId"] as? String, let userId = StringID(value: value) {
+			migrated["userId"] = userId.value
+		}
+		if let value = stored["installId"] as? String, let installId = StringID(value: value) {
+			migrated["installId"] = installId.value
+		}
+
+		userDefaults.setValue(migrated, forKey: Self.attributionKey)
 	}
 
 	func storeAttribution(attribution attributionOutput: AttributionOutput) {
@@ -36,11 +50,10 @@ struct Store {
 		dict["installId"] = attributionOutput.completeAttributionResponse.installId.value
 		dict["userType"] = attribution.userType
 		dict["redownload"] = attribution.isRedownload
-		dict["campaignId"] = attribution.campaign.id
+		dict["campaignExternalId"] = attribution.campaign.id
 		dict["campaignName"] = attribution.campaign.name
 		dict["campaignType"] = attribution.campaign.type
 		dict["campaignOrganic"] = attribution.campaign.isOrganic
-		dict["type"] = attribution.type
 		dict["channelId"] = attribution.channel.id
 		dict["channelName"] = attribution.channel.name
 		dict["channelIncent"] = attribution.channel.isIncent
@@ -58,12 +71,6 @@ struct Store {
 		}
 		if let adsetId = attribution.adsetId {
 			dict["adsetId"] = adsetId
-		}
-
-		dict["testGroup"] = attributionOutput.testGroup ?? Self.noTestGroup
-
-		if let sdkConfig = attributionOutput.sdkConfig, let sdkConfigData = try? JSONEncoder().encode(sdkConfig) {
-			dict["sdkConfig"] = sdkConfigData
 		}
 
 		userDefaults.setValue(dict, forKey: Self.attributionKey)
@@ -151,11 +158,10 @@ struct Store {
 		guard let installId = StringID(value: installIdString) else { return nil }
 		guard let userType = dict["userType"] as? String else { return nil }
 		let redownload = dict["redownload"] as? Bool ?? false
-		guard let campaignId = dict["campaignId"] as? Int else { return nil }
+		guard let campaignExternalId = dict["campaignExternalId"] as? String else { return nil }
 		guard let campaignName = dict["campaignName"] as? String else { return nil }
 		guard let campaignType = dict["campaignType"] as? String else { return nil }
 		guard let campaignOrganic = dict["campaignOrganic"] as? Bool else { return nil }
-		guard let type = dict["type"] as? String else { return nil }
 		guard let channelId = dict["channelId"] as? Int else { return nil }
 		guard let channelName = dict["channelName"] as? String else { return nil }
 		guard let channelIncent = dict["channelIncent"] as? Bool else { return nil }
@@ -174,12 +180,11 @@ struct Store {
 			userType: userType,
 			redownload: redownload,
 			campaign: Campaign(
-				id: campaignId,
+				id: campaignExternalId,
 				name: campaignName,
 				type: campaignType,
 				organic: campaignOrganic
 			),
-			type: type,
 			channel: Channel(id: channelId, name: channelName, incent: channelIncent),
 			partner: Partner(id: partnerId, name: partnerName),
 			sourceId: sourceId,
@@ -188,22 +193,11 @@ struct Store {
 			adsetId: adsetId,
 			createdAt: createdAt
 		)
-		var testGroup = dict["testGroup"] as? Int
-		if testGroup == Self.noTestGroup {
-			testGroup = nil
-		}
-
-		var sdkConfig: AttributionOutputSdkConfig?
-		if let sdkConfigData = dict["sdkConfig"] as? Data {
-			sdkConfig = try? JSONDecoder().decode(AttributionOutputSdkConfig.self, from: sdkConfigData)
-		}
 
 		return AttributionOutput(
 			completeAttributionResponse: response,
 			retargetingParameters: nil,
-			testGroup: testGroup,
-			claimsTimedOut: false,
-			sdkConfig: sdkConfig
+			claimsTimedOut: false
 		)
 	}
 
@@ -299,29 +293,6 @@ struct Store {
 		}
 
 		return AppVersionUpdateInfo(lastAppVersion: lastAppVersion, kind: .updatedApp)
-	}
-
-	func getTestGroupId(idfv: String) -> (Int?, Bool)? {
-		if let attribution = getStoredOutput() {
-			return (attribution.testGroup, true)
-		}
-
-		guard let dict = userDefaults.dictionary(forKey: Self.testGroupIdKey) else {
-			return nil
-		}
-
-		guard let storedIdfv = dict["idfv"] as? String else { return nil }
-		guard let storedTestGroupId = dict["testGroupId"] as? Int else { return nil }
-
-		return (storedTestGroupId, storedIdfv != idfv)
-	}
-
-	func setTestGroupId(idfv: String, testGroupId: Int?) {
-		let data: [String: Any] = [
-			"idfv": idfv,
-			"testGroupId": testGroupId ?? -1,
-		]
-		userDefaults.set(data, forKey: Self.testGroupIdKey)
 	}
 }
 

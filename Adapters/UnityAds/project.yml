@@ -29,8 +29,6 @@ settings:
       VALIDATE_PRODUCT: YES
       SWIFT_OPTIMIZATION_LEVEL: -O
 
-xcodeVersion: 16.0.0
-
 targets:
   JustTrackSDKUnityAdsAdapter:
     type: framework
